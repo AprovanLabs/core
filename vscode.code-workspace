@@ -1,0 +1,31 @@
+{
+    "folders": [
+        {
+            "path": "../core"
+        },
+        {
+            "path": "../aprovan.com"
+        },
+        {
+            "path": "../data-science"
+        },
+        {
+            "path": "../lahilo"
+        },
+        {
+            "path": "../lotus"
+        },
+        {
+            "path": "../kossabos"
+        },
+    ],
+    "settings": {
+        "vsicons.presets.angular": true,
+        "files.exclude": {
+            "vscode.code-workspace": true,
+        }
+    },
+    "extensions": {
+        "recommendations": []
+    }
+}

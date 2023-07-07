@@ -1,0 +1,57 @@
+{
+    "name": "Aprovan",
+    "image": "mcr.microsoft.com/devcontainers/base:jammy",
+    "workspaceMount": "source=${localWorkspaceFolder}/../..,target=/workspace,type=bind,consistency=cached",
+    "workspaceFolder": "/workspace",
+    "features": {
+        "ghcr.io/devcontainers/features/aws-cli:1": {},
+        "ghcr.io/devcontainers/features/docker-inside-of-docker:1": {},
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers/features/python:1": {},
+        "ghcr.io/devcontainers-contrib/features/black:2": {},
+        "ghcr.io/devcontainers-contrib/features/pylint:2": {},
+        "ghcr.io/eitsupi/devcontainer-features/jq-likes:1": {},
+        "ghcr.io/jungaretti/features/make:1": {}
+    },
+    "remoteEnv": {
+        "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "editor.formatOnSave": true,
+                "files.insertFinalNewline": true,
+                "[makefile]": {
+                    "editor.insertSpaces": false,
+                    "editor.detectIndentation": false
+                }
+            },
+            "extensions": [
+                "amazonwebservices.aws-toolkit-vscode",
+                "austenc.tailwind-docs",
+                "bradlc.vscode-tailwindcss",
+                "dbaeumer.vscode-eslint",
+                "donjayamanne.githistory",
+                "EditorConfig.EditorConfig",
+                "esbenp.prettier-vscode",
+                "GitHub.vscode-pull-request-github",
+                "hashicorp.hcl",
+                "hashicorp.terraform",
+                "ms-azuretools.vscode-docker",
+                "ms-python.black-formatter",
+                "ms-python.flake8",
+                "ms-python.isort",
+                "ms-python.pylint",
+                "ms-python.python",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.jupyter-keymap",
+                "ms-toolsai.jupyter-renderers",
+                "ms-toolsai.vscode-jupyter-cell-tags",
+                "ms-toolsai.vscode-jupyter-slideshow",
+                "VisualStudioExptTeam.vscodeintellicode",
+                "vscode-icons-team.vscode-icons",
+                "yoavbls.pretty-ts-errors"
+            ]
+        }
+    }
+}

@@ -13,3 +13,9 @@ clean:
 	rm -f terraform.tfstate
 	rm -f terraform.tfstate.backup
 	rm -f .terraform.lock.hcl
+
+install:
+	brew install cloudflare/cloudflare/cloudflared
+
+tunnel:
+	sudo cloudflared service install ${CLOUDFLARE_TUNNEL_ID}
