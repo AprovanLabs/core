@@ -7,3 +7,8 @@ https://developers.cloudflare.com/cloudflare-one/api-terraform/access-with-terra
 https://github.com/timoa/terraform-oci-vscode-server/tree/develop/terraform
 
 https://github.com/cloudflare/terraform-provider-cloudflare/issues/2328
+
+## Getting Started
+
+1. Instal Docker Desktop
+2. Install DevPod

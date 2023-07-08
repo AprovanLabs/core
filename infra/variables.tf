@@ -12,7 +12,7 @@ variable "cloudflare_api_key" {
 
 variable "domain" {
   description = "Domain."
-  default     = "local.aprovan.work"
+  default     = "apps.aprovan.work"
 }
 
 variable "email" {
