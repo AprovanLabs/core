@@ -4,6 +4,9 @@
             "path": "../core"
         },
         {
+            "path": "../apprentice"
+        },
+        {
             "path": "../aprovan.com"
         },
         {
@@ -16,11 +19,17 @@
             "path": "../lotus"
         },
         {
+            "path": "../draksan"
+        },
+        {
             "path": "../kossabos"
         },
+        {
+            "path": "../formulast"
+        }
     ],
     "settings": {
-        "vsicons.presets.angular": true,
+        "window.title": "Aprovan",
         "files.exclude": {
             "vscode.code-workspace": true,
         }

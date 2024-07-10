@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lahilo
+  labels:
+    app.kubernetes.io/name: lahilo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lahilo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lahilo
+    spec:
+      containers:
+        - name: lahilo
+          image: "aprovan/lahilo:latest"
+          env:
+            - name: PORT
+              value: 5000
+            - name: DOCUMENT_BUCKET
+              value: aprovan-lahilo-production-data-us-east-2
+            - name: SESSION_TABLE
+              value: Lahilo-Production
+            - name: USER_POOL_ID
+              value: us-east-2_8tbWBQsG0
+            - name: ATHENA_DATABASE
+              value: lahilo_production
+            - name: ATHENA_WORKGROUP
+              value: lahilo-production-db
+            - name: ATHENA_OUTPUT_LOCATION
+              value: s3://aprovan-lahilo-production-data-us-east-2/athena
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lahilo
+spec:
+  selector:
+    app.kubernetes.io/name: lahilo
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000

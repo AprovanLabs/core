@@ -1,17 +1,22 @@
-resource "cloudflare_tunnel" "worker1" {
-  account_id = "f037e56e89293a057740de681ac9abbe"
-  name       = "worker1"
-  secret     = "<32 character secret>"
+resource "random_password" "tunnel_secret" {
+  length = 64
+}
+
+resource "cloudflare_tunnel" "tunnel" {
+  account_id = var.cloudflare_account_id
+  name       = "internal"
+  secret     = base64sha256(random_password.tunnel_secret.result)
 }
 
 resource "cloudflare_tunnel_config" "example_config" {
-  account_id = "f037e56e89293a057740de681ac9abbe"
-  tunnel_id  = cloudflare_tunnel.worker1.id
+  account_id = var.cloudflare_account_id
+  tunnel_id  = cloudflare_tunnel.tunnel.id
 
   config {
     warp_routing {
       enabled = true
     }
+
     origin_request {
       connect_timeout          = "1m0s"
       tls_timeout              = "1m0s"
@@ -36,8 +41,8 @@ resource "cloudflare_tunnel_config" "example_config" {
       }
     }
     ingress_rule {
-      hostname = "local.aprovan.work"
-      path     = "/worker/1"
+      hostname = var.domain
+      path     = "/"
       service  = "http://10.0.0.2:8080"
     }
     ingress_rule {
