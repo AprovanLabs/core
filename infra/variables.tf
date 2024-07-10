@@ -8,6 +8,7 @@ variable "cloudflare_zone_id" {
 
 variable "cloudflare_api_key" {
   description = "Cloudflare API key"
+  sensitive   = true
 }
 
 variable "domain" {
@@ -29,6 +30,8 @@ variable "github_client_id" {
 variable "github_client_secret" {
   description = "GitHub client secret"
   type        = string
+  sensitive   = true
+
 }
 
 variable "github_org" {
@@ -43,10 +46,21 @@ variable "github_repository" {
   default     = "core"
 }
 
+variable "github_username" {
+  description = "GitHub username"
+  type        = string
+}
+
 variable "github_token" {
   description = "GitHub platform token"
   type        = string
-  default     = "AprovanBot"
+  sensitive   = true
+
+}
+
+variable "cluster" {
+  description = "Cluster name"
+  type        = string
 }
 
 variable "cluster_endpoint" {
@@ -57,15 +71,18 @@ variable "cluster_endpoint" {
 variable "cluster_client_certificate" {
   description = "K8s cluster client certificate"
   type        = string
+  sensitive   = true
 }
 
 variable "cluster_client_key" {
   description = "K8s cluster client key"
   type        = string
+  sensitive   = true
 }
 
 variable "cluster_ca_certificate" {
   description = "K8s cluster CA certificate"
   type        = string
+  sensitive   = true
 }
 

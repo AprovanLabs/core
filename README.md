@@ -1,14 +1,14 @@
 <br>
 
 <p align="center">
-    <img width="300" src="./assets/logo-labs.png" alt="Aprovan Labs Icon">
+    <img width="300" src="https://raw.githubusercontent.com/AprovanLabs/aprovan.com/main/docs/assets/logo-labs.png" alt="Aprovan Labs Icon">
 </p>
 
 <br>
 
 <p align="center">
     <a target="_blank">
-        <img width="300" src="./assets/text-labs.svg" alt="Aprovan Labs Logo">
+        <img width="300" src="https://raw.githubusercontent.com/AprovanLabs/aprovan.com/main/docs/assets/text-labs.svg" alt="Aprovan Labs Logo">
     </a>
 </p>
 
