@@ -1,40 +1,63 @@
 {
-    "folders": [
-        {
-            "path": "../core"
-        },
-        {
-            "path": "../apprentice"
-        },
-        {
-            "path": "../aprovan.com"
-        },
-        {
-            "path": "../data-science"
-        },
-        {
-            "path": "../lahilo"
-        },
-        {
-            "path": "../lotus"
-        },
-        {
-            "path": "../draksan"
-        },
-        {
-            "path": "../kossabos"
-        },
-        {
-            "path": "../formulast"
-        }
-    ],
-    "settings": {
-        "window.title": "Aprovan",
-        "files.exclude": {
-            "vscode.code-workspace": true,
-        }
+  "folders": [
+    {
+      "path": "../apprentice",
     },
-    "extensions": {
-        "recommendations": []
-    }
+    {
+      "path": "../patchwork",
+    },
+    {
+      "path": "../hardcopy",
+    },
+    {
+      "path": "../zolvery",
+    },
+    {
+      "name": "memory",
+      "path": "../apprentice/.apprentice",
+    },
+    {
+      "name": "working",
+      "path": "../apprentice/.working",
+    },
+    {
+      "path": "../cicadas",
+    },
+    {
+      "path": "../core",
+    },
+    {
+      "path": "../aprovan.com",
+    },
+    {
+      "path": "../data-science",
+    },
+    {
+      "path": "../lahilo",
+    },
+    {
+      "path": "../lotus",
+    },
+    {
+      "path": "../draksan",
+    },
+    {
+      "path": "../formulast",
+    },
+    {
+      "path": "../copilot-proxy",
+    },
+  ],
+  "settings": {
+    "window.title": "Aprovan",
+    "files.exclude": {
+      "apprentice/**": true,
+      ".apprentice/**": true,
+      "node_modules/**": true,
+      "dist/**": true,
+    },
+  },
+  "extensions": {
+    "recommendations": [],
+  },
 }
