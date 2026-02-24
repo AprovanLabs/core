@@ -11,8 +11,9 @@ ORG="AprovanLabs"
 
 # Parse workspace file: extract repo names from paths without a 'name' field
 # Strip JSONC artifacts (trailing commas, comments) then use jq
+# Use perl for more robust trailing comma removal across multiple lines
 repos=$(sed 's|//.*||' "$WORKSPACE_FILE" \
-    | sed -E 's/,([[:space:]]*[}\]])/\1/g' \
+    | perl -0777 -pe 's/,(\s*[}\]])/$1/g' \
     | jq -r '.folders[] | select(has("name") | not) | .path | split("/") | last' \
 )
 
