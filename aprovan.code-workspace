@@ -47,6 +47,15 @@
     {
       "path": "../copilot-proxy",
     },
+    {
+        "path": "../publishing"
+    },
+    {
+        "path": "../okaman"
+    },
+    {
+        "path": "../kortut"
+    }
   ],
   "settings": {
     "window.title": "Aprovan",

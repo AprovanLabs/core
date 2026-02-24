@@ -1,0 +1,161 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: aprovan-prd-use2-core. Shared resources for Aprovan.
+
+Parameters:
+  AppName:
+    Type: String
+    Default: aprovan
+    Description: The name of the app.
+
+  PublicCertificate:
+    Type: String
+    Description: The ARN of the public certificate.
+
+  Env:
+    Type: String
+    Default: prd
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    Description: The environment for the stack
+
+  RegionCode:
+    Type: String
+    Default: use2
+    AllowedValues:
+      - use1
+      - use2
+
+  ApiDomainName:
+    Type: String
+    Default: api.aprovan.com
+    Description: The domain name for the API.
+
+  InstanceSize:
+    Type: String
+    Default: "micro_3_0"
+    AllowedValues:
+      - "nano_3_0" 
+      - "micro_3_0"
+      - "small_3_0"
+      - "medium_3_0"
+      - "large_3_0"
+    Description: The size of the Lightsail instance (base $3.50 / month).
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-${RegionCode}"
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.1.0.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}-${Env}-${RegionCode}-public"
+
+  LightsailInstance:
+    Type: AWS::Lightsail::Instance
+    Properties:
+      InstanceName: !Sub "${AWS::StackName}"
+      BlueprintId: amazon_linux_2023
+      BundleId: !Ref InstanceSize
+      AddOns:
+        - AddOnType: AutoSnapshot
+      Networking:
+        Ports:
+          - FromPort: 80
+            ToPort: 80
+            Protocol: TCP
+          - FromPort: 443
+            ToPort: 443
+            Protocol: TCP
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      UserData: !Base64 |
+        #!/bin/bash
+        yum update -y
+        yum install -y docker
+        systemctl start docker
+        systemctl enable docker
+        curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+        echo "0 * * * * $(which docker) login -u AWS -p $(aws ecr get-login-password --region ${AWS::Region}) <your-ecr-registry>" | crontab -
+        curl -O https://example.com/docker-compose.yml
+        docker-compose up -d
+
+  CloudMapNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: !Sub "${AppName}-${Env}-${RegionCode}-services"
+      Vpc: !Ref VPC
+
+  # ApiGateway:
+  #   Type: AWS::ApiGateway::RestApi
+  #   Properties:
+  #     Name: !Sub "${AppName}-${Env}-${RegionCode}-metadata"
+  #     EndpointConfiguration:
+  #       Types:
+  #         - REGIONAL
+
+  # ApiGatewayResource:
+  #   Type: AWS::ApiGateway::Resource
+  #   Properties:
+  #     ParentId: !GetAtt ApiGateway.RootResourceId
+  #     PathPart: health
+  #     RestApiId: !Ref ApiGateway
+
+  # ApiGatewayMethod:
+  #   Type: AWS::ApiGateway::Method
+  #   Properties:
+  #     RestApiId: !Ref ApiGateway
+  #     ResourceId: !Ref ApiGatewayResource
+  #     HttpMethod: GET
+  #     AuthorizationType: NONE
+  #     Integration:
+  #       Type: HTTP
+  #       IntegrationHttpMethod: GET
+        # Uri: !Sub "http://[${LightsailInstance.Ipv6Address}]/healthz"
+
+  # ApiGatewayDomain:
+  #   Type: AWS::ApiGateway::DomainName
+  #   Properties:
+  #     DomainName: ${ApiDomainName}
+  #     RegionalCertificateArn: !Ref PublicCertificate
+  #     EndpointConfiguration:
+  #       Types:
+  #         - REGIONAL
+
+Outputs:
+  VPCId:
+    Description: The ID of the VPC.
+    Value: !Ref VPC
+    Export:
+      Name: AprovanVPCId
+
+  PublicSubnetId:
+    Description: The ID of the public subnet.
+    Value: !Ref PublicSubnet
+    Export:
+      Name: AprovanPublicSubnetId
+
+  LightsailInstanceId:
+    Description: The ID of the Lightsail instance.
+    Value: !Ref LightsailInstance
+    Export:
+      Name: AprovanLightsailInstanceId
+
+  # ApiGatewayInvokeURL:
+  #   Description: Invoke URL for the API Gateway.
+  #   Value: !Sub "https://${ApiGatewayDomain.DomainName}/healthz"
+  #   Export:
+  #     Name: ApiGatewayInvokeURL
