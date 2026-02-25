@@ -1,6 +1,9 @@
 {
   "folders": [
     {
+      "path": "../projects",
+    },
+    {
       "path": "../apprentice",
     },
     {
@@ -46,6 +49,9 @@
     },
     {
       "path": "../copilot-proxy",
+    },
+    {
+      "path": "../claude-proxy",
     },
     {
         "path": "../publishing"
