@@ -12,7 +12,7 @@
     </a>
 </p>
 
-<h3 align="center">
+<h3 align="center" style="max-width: 38rem">
     built what's next
 </h3>
 
