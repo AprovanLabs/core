@@ -54,14 +54,17 @@
       "path": "../claude-proxy",
     },
     {
-        "path": "../publishing"
+      "path": "../publishing",
     },
     {
-        "path": "../okaman"
+      "path": "../okaman",
     },
     {
-        "path": "../kortut"
-    }
+      "path": "../kortut",
+    },
+    {
+      "path": "../dotfiles",
+    },
   ],
   "settings": {
     "window.title": "Aprovan",

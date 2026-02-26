@@ -6,9 +6,9 @@ https://gist.github.com/colinvh/14e4b7fb6b66c29f79d3?permalink_comment_id=361014
 
 - Application: `aprovan`, `lahilo`
 - Environment: `dev`, `tst`, `stg`, `prd`, `glb`
-- Region Code: `use2`, `euc`, `glb`
+- Region Code: `use1`, `use2`, `glb`
 
-`<app>-<env>-<regioncode>-<resourcename>`
+`<app>-<env>-<region-short-code>-<resource-name>`
 
 ### AWS
 
@@ -16,7 +16,7 @@ Do not include the AWS name in the resource name
 
 ### Secrets
 
-Secrets should use `/` instead of `-`. `<service>/<env>/<regioncode>/<resourcename>`
+Secrets should use `/` instead of `-`. `<service>/<env>/<region-short-code>/<resource-name>`
 
 ## Stacks
 
@@ -35,4 +35,3 @@ Secrets should use `/` instead of `-`. `<service>/<env>/<regioncode>/<resourcena
 
 - `aprovan-glb-billing`: Aprovan billing
 - `aprovan-prd-use2-core`: Shared Aprovan resources
-
