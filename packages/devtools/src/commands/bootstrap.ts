@@ -4,11 +4,12 @@ import { join } from "node:path";
 
 function run(cmd: string, label: string): void {
   console.log(`  ${label}...`);
-  execSync(cmd, { stdio: "inherit" });
+  execSync(cmd, { stdio: "inherit", shell: "/bin/bash" });
 }
 
 export function bootstrap(): void {
   const cwd = process.cwd();
+  const venvBin = join(cwd, ".venv", "bin");
   console.log(`Bootstrapping repository at ${cwd}\n`);
 
   // 1. Create .agents/context folder
@@ -23,7 +24,11 @@ export function bootstrap(): void {
   // 2. Set up Cicadas
   console.log("\nSetting up Cicadas...");
   run("uv venv .venv", "Creating virtual environment");
-  run("source .venv/bin/activate && cicadas init", "Initializing Cicadas");
+  run(
+    `uv pip install --python ${join(venvBin, "python")} aprovan-cicadas`,
+    "Installing Cicadas",
+  );
+  run(`${join(venvBin, "cicadas")} init`, "Initializing Cicadas");
 
   // 3. Symlink .cicadas -> .agents/context/cicadas
   const cicadasLink = join(".agents", "context", "cicadas");

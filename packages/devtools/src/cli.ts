@@ -9,7 +9,7 @@ const program = new Command();
 program
   .name("devtools")
   .description("Shared development utilities for Aprovan projects")
-  .version("0.1.0");
+  .version("0.2.0");
 
 program
   .command("git-refresh")
