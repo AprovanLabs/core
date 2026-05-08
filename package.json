@@ -1,7 +1,7 @@
 {
   "name": "@aprovan/core",
   "version": "0.0.0",
-  "description": "Aprovan core monorepo",
+  "description": "Aprovan core",
   "type": "module",
   "private": true,
   "scripts": {
