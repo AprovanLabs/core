@@ -45,7 +45,6 @@ done
 
 # ── Logging helpers ──────────────────────────────────────────────────────────
 
-log()    { echo "  $*"; }
 info()   { echo "[sync] $*"; }
 ok()     { echo "  ✓ $*"; }
 skip()   { echo "  – $*  (unchanged)"; }
@@ -77,16 +76,31 @@ info "Starting Multica sync from $MULTICA_DIR"
 $DRY_RUN && info "(dry-run mode — no changes will be made)"
 $PRUNE   && info "(prune mode — resources not in config will be deleted)"
 
-# ── Helper: run or dry-run a command ────────────────────────────────────────
+# ── ID store (bash 3-compatible, no associative arrays) ─────────────────────
+# Uses a temp directory: files named "${kind}_${sanitized_name}" hold IDs.
+# In dry-run mode, planned-but-not-yet-created resources use id="dry-run"
+# as a placeholder so downstream dependency steps can simulate correctly.
 
-run_cmd() {
-  local label="$1"; shift
-  if $DRY_RUN; then
-    dryrun "$label: $*"
-    return 0
-  fi
-  verbose "Running: $*"
-  "$@"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+_sanitize() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd 'a-z0-9_-'
+}
+
+store_id() {
+  # store_id <kind> <name> <id>
+  local key
+  key="$(_sanitize "$2")"
+  printf '%s' "$3" > "$TMP_DIR/${1}_${key}"
+}
+
+get_id() {
+  # get_id <kind> <name>  — prints stored ID or empty string
+  local key file
+  key="$(_sanitize "$2")"
+  file="$TMP_DIR/${1}_${key}"
+  [[ -f "$file" ]] && cat "$file" || printf ''
 }
 
 # ── Load defaults ────────────────────────────────────────────────────────────
@@ -104,18 +118,28 @@ info "Fetching current Multica state..."
 
 CURRENT_AGENTS=$(multica agent list --output json 2>/dev/null || echo "[]")
 CURRENT_SKILLS=$(multica skill list --output json 2>/dev/null || echo "[]")
+CURRENT_RUNTIMES=$(multica runtime list --output json 2>/dev/null || echo "[]")
 
-verbose "Found $(echo "$CURRENT_AGENTS" | jq length) agents, $(echo "$CURRENT_SKILLS" | jq length) skills"
+verbose "Found $(echo "$CURRENT_AGENTS" | jq length) agents, $(echo "$CURRENT_SKILLS" | jq length) skills, $(echo "$CURRENT_RUNTIMES" | jq length) runtimes"
+
+# Build runtime provider → id map (e.g. "claude" → UUID)
+while IFS=$'\t' read -r rid rprovider; do
+  store_id "runtime" "$rprovider" "$rid"
+done < <(echo "$CURRENT_RUNTIMES" | jq -r '.[] | [.id, .provider] | @tsv')
+
+# Build agent name → id map
+while IFS=$'\t' read -r id name; do
+  store_id "agent" "$name" "$id"
+done < <(echo "$CURRENT_AGENTS" | jq -r '.[] | [.id, .name] | @tsv')
+
+# Build skill name → id map
+while IFS=$'\t' read -r id name; do
+  store_id "skill" "$name" "$id"
+done < <(echo "$CURRENT_SKILLS" | jq -r '.[] | [.id, .name] | @tsv')
 
 # ── Step 1: Sync Agents ───────────────────────────────────────────────────────
 
 info "Step 1/4: Syncing agents..."
-
-# Map: name → id for existing agents
-declare -A AGENT_IDS
-while IFS=$'\t' read -r id name; do
-  AGENT_IDS["$name"]="$id"
-done < <(echo "$CURRENT_AGENTS" | jq -r '.[] | [.id, .name] | @tsv')
 
 for agent_file in "$MULTICA_DIR"/agents/*.json; do
   [[ "$(basename "$agent_file")" == _* ]] && continue  # skip _defaults.json
@@ -128,13 +152,28 @@ for agent_file in "$MULTICA_DIR"/agents/*.json; do
   max_concurrent=$(jq -r ".max_concurrent_tasks // $DEFAULT_MAX_CONCURRENT" "$agent_file")
   visibility=$(jq -r ".visibility // \"$DEFAULT_VISIBILITY\"" "$agent_file")
 
-  if [[ -n "${AGENT_IDS[$name]+x}" ]]; then
-    agent_id="${AGENT_IDS[$name]}"
+  # Resolve runtime provider name → workspace runtime UUID
+  runtime_id=$(get_id "runtime" "$runtime")
+  if [[ -z "$runtime_id" ]]; then
+    err "Runtime provider '$runtime' not found in workspace — skipping agent '$name'"
+    ERRORS=$((ERRORS + 1))
+    continue
+  fi
+
+  agent_id=$(get_id "agent" "$name")
+
+  if [[ -n "$agent_id" ]]; then
     verbose "Agent '$name' exists (id=$agent_id), updating..."
-    if run_cmd "Update agent '$name'" \
-        multica agent update "$agent_id" \
+    if $DRY_RUN; then
+      dryrun "Update agent '$name' (runtime=$runtime model=$model)"
+      UPDATED=$((UPDATED + 1))
+    elif multica agent update "$agent_id" \
           --description "$description" \
-          --instructions "$instructions"; then
+          --instructions "$instructions" \
+          --model "$model" \
+          --max-concurrent-tasks "$max_concurrent" \
+          --visibility "$visibility" \
+          --output json > /dev/null; then
       ok "Agent '$name' updated"
       UPDATED=$((UPDATED + 1))
     else
@@ -145,17 +184,22 @@ for agent_file in "$MULTICA_DIR"/agents/*.json; do
     verbose "Agent '$name' not found, creating..."
     if $DRY_RUN; then
       dryrun "Create agent '$name' (runtime=$runtime model=$model)"
+      store_id "agent" "$name" "dry-run"  # placeholder for Step 3 dry-run simulation
       CREATED=$((CREATED + 1))
     else
       new_agent=$(multica agent create \
           --name "$name" \
           --description "$description" \
           --instructions "$instructions" \
+          --runtime-id "$runtime_id" \
+          --model "$model" \
+          --max-concurrent-tasks "$max_concurrent" \
+          --visibility "$visibility" \
           --output json 2>/dev/null || echo "{}")
       new_id=$(echo "$new_agent" | jq -r '.id // empty')
       if [[ -n "$new_id" ]]; then
         ok "Agent '$name' created (id=$new_id)"
-        AGENT_IDS["$name"]="$new_id"
+        store_id "agent" "$name" "$new_id"
         CREATED=$((CREATED + 1))
       else
         err "Failed to create agent '$name'"
@@ -169,28 +213,26 @@ done
 
 info "Step 2/4: Syncing skills..."
 
-# Map: name → id for existing skills
-declare -A SKILL_IDS
-while IFS=$'\t' read -r id name; do
-  SKILL_IDS["$name"]="$id"
-done < <(echo "$CURRENT_SKILLS" | jq -r '.[] | [.id, .name] | @tsv')
-
 # 2a: Import external skills from _imports.json
 IMPORTS_FILE="$MULTICA_DIR/skills/_imports.json"
 if [[ -f "$IMPORTS_FILE" ]]; then
   import_count=$(jq '.imports | length' "$IMPORTS_FILE")
-  verbose "Found $import_count external skill imports"
+  verbose "Found $import_count external skill import(s)"
 
   for i in $(seq 0 $((import_count - 1))); do
     import_name=$(jq -r ".imports[$i].name" "$IMPORTS_FILE")
     import_url=$(jq -r ".imports[$i].url" "$IMPORTS_FILE")
 
-    if [[ -n "${SKILL_IDS[$import_name]+x}" ]]; then
+    existing_id=$(get_id "skill" "$import_name")
+    if [[ -n "$existing_id" ]]; then
       skip "External skill '$import_name' already imported"
       UNCHANGED=$((UNCHANGED + 1))
     else
-      if run_cmd "Import skill '$import_name'" \
-          multica skill import --url "$import_url"; then
+      if $DRY_RUN; then
+        dryrun "Import skill '$import_name' from $import_url"
+        store_id "skill" "$import_name" "dry-run"
+        CREATED=$((CREATED + 1))
+      elif multica skill import --url "$import_url" --output json > /dev/null; then
         ok "Imported skill '$import_name'"
         CREATED=$((CREATED + 1))
       else
@@ -201,20 +243,27 @@ if [[ -f "$IMPORTS_FILE" ]]; then
   done
 fi
 
-# 2b: Sync local skills from subdirectories
+# 2b: Sync local SKILL.md files from subdirectories
 for skill_dir in "$MULTICA_DIR"/skills/*/; do
   [[ -f "$skill_dir/SKILL.md" ]] || continue
   skill_name=$(basename "$skill_dir")
-
   skill_md="$skill_dir/SKILL.md"
-  skill_description=$(grep -m1 '^description:' "$skill_md" | sed 's/^description:[[:space:]]*//' || echo "")
 
-  if [[ -n "${SKILL_IDS[$skill_name]+x}" ]]; then
-    skill_id="${SKILL_IDS[$skill_name]}"
-    verbose "Skill '$skill_name' exists (id=$skill_id), upserting files..."
-    if run_cmd "Upsert skill '$skill_name' files" \
-        multica skill files upsert "$skill_id" --path "$skill_md" --name "SKILL.md"; then
-      ok "Skill '$skill_name' files updated"
+  # Extract description from SKILL.md frontmatter (strip surrounding quotes if present)
+  skill_description=$(awk '/^description:/{sub(/^description:[[:space:]]*/,""); gsub(/^"|"$/,""); print; exit}' "$skill_md")
+  skill_content=$(cat "$skill_md")
+
+  skill_id=$(get_id "skill" "$skill_name")
+
+  if [[ -n "$skill_id" ]]; then
+    verbose "Skill '$skill_name' exists (id=$skill_id), updating content..."
+    if $DRY_RUN; then
+      dryrun "Update skill '$skill_name'"
+      UPDATED=$((UPDATED + 1))
+    elif multica skill update "$skill_id" \
+          --content "$skill_content" \
+          --output json > /dev/null; then
+      ok "Skill '$skill_name' updated"
       UPDATED=$((UPDATED + 1))
     else
       err "Failed to update skill '$skill_name'"
@@ -224,18 +273,18 @@ for skill_dir in "$MULTICA_DIR"/skills/*/; do
     verbose "Skill '$skill_name' not found, creating..."
     if $DRY_RUN; then
       dryrun "Create skill '$skill_name'"
+      store_id "skill" "$skill_name" "dry-run"  # placeholder for Step 3 dry-run simulation
       CREATED=$((CREATED + 1))
     else
       new_skill=$(multica skill create \
           --name "$skill_name" \
           --description "$skill_description" \
+          --content "$skill_content" \
           --output json 2>/dev/null || echo "{}")
       new_id=$(echo "$new_skill" | jq -r '.id // empty')
       if [[ -n "$new_id" ]]; then
         ok "Skill '$skill_name' created (id=$new_id)"
-        SKILL_IDS["$skill_name"]="$new_id"
-        # Upload the SKILL.md
-        multica skill files upsert "$new_id" --path "$skill_md" --name "SKILL.md" 2>/dev/null || true
+        store_id "skill" "$skill_name" "$new_id"
         CREATED=$((CREATED + 1))
       else
         err "Failed to create skill '$skill_name'"
@@ -253,10 +302,10 @@ for agent_file in "$MULTICA_DIR"/agents/*.json; do
   [[ "$(basename "$agent_file")" == _* ]] && continue
 
   agent_name=$(jq -r '.name' "$agent_file")
-  agent_id="${AGENT_IDS[$agent_name]:-}"
+  agent_id=$(get_id "agent" "$agent_name")
 
   if [[ -z "$agent_id" ]]; then
-    verbose "Skipping skill assignment for '$agent_name' — agent ID not known (create failed?)"
+    verbose "Skipping skill assignment for '$agent_name' — agent ID unknown (create may have failed)"
     SKIPPED=$((SKIPPED + 1))
     continue
   fi
@@ -267,28 +316,38 @@ for agent_file in "$MULTICA_DIR"/agents/*.json; do
     continue
   fi
 
-  skill_ids=()
+  skill_ids=""
   valid=true
   while IFS= read -r sname; do
-    sid="${SKILL_IDS[$sname]:-}"
+    [[ -z "$sname" ]] && continue
+    sid=$(get_id "skill" "$sname")
     if [[ -z "$sid" ]]; then
-      err "Skill '$sname' not found for agent '$agent_name' — skipping skill assignment"
+      err "Skill '$sname' not found for agent '$agent_name' — skipping all skill assignments for this agent"
       valid=false
       break
     fi
-    skill_ids+=("$sid")
+    if [[ -z "$skill_ids" ]]; then
+      skill_ids="$sid"
+    else
+      skill_ids="$skill_ids,$sid"
+    fi
   done <<< "$skill_names"
 
-  if $valid && [[ ${#skill_ids[@]} -gt 0 ]]; then
-    skill_id_args=$(printf '%s\n' "${skill_ids[@]}" | tr '\n' ',' | sed 's/,$//')
-    if run_cmd "Assign skills to '$agent_name'" \
-        multica agent skills set "$agent_id" --skill-ids "$skill_id_args"; then
+  if $valid && [[ -n "$skill_ids" ]]; then
+    if $DRY_RUN; then
+      dryrun "Assign skills to '$agent_name': $(echo "$skill_names" | tr '\n' ' ')"
+      UPDATED=$((UPDATED + 1))
+    elif multica agent skills set "$agent_id" \
+          --skill-ids "$skill_ids" \
+          --output json > /dev/null; then
       ok "Skills assigned to '$agent_name': $(echo "$skill_names" | tr '\n' ' ')"
       UPDATED=$((UPDATED + 1))
     else
       err "Failed to assign skills to '$agent_name'"
       ERRORS=$((ERRORS + 1))
     fi
+  elif ! $valid; then
+    ERRORS=$((ERRORS + 1))
   fi
 done
 
@@ -296,17 +355,20 @@ done
 
 info "Step 4/4: Syncing squads..."
 
+squad_file_count=0
 for squad_file in "$MULTICA_DIR"/squads/*.json; do
-  [[ "$(basename "$squad_file")" == .gitkeep ]] && continue
   [[ -f "$squad_file" ]] || continue
+  squad_name=$(jq -r '.name' "$squad_file" 2>/dev/null) || continue
+  squad_file_count=$((squad_file_count + 1))
 
-  squad_name=$(jq -r '.name' "$squad_file")
-  verbose "Squad: $squad_name"
-
-  # Squad sync is a future addition — log as skipped until multica squad CLI is available
-  skip "Squad '$squad_name' — squad sync requires multica squad CLI (future)"
+  # Squad sync deferred — multica squad create/update CLI support pending
+  skip "Squad '$squad_name' sync deferred (multica squad CLI not yet available)"
   SKIPPED=$((SKIPPED + 1))
 done
+
+if [[ $squad_file_count -eq 0 ]]; then
+  verbose "No squad definitions found"
+fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
