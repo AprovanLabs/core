@@ -5,6 +5,26 @@
       "name": "brainstorming",
       "source": "skills.sh",
       "url": "https://www.skills.sh/obra/superpowers/brainstorming"
+    },
+    {
+      "name": "writing-plans",
+      "source": "skills.sh",
+      "url": "https://www.skills.sh/obra/superpowers/writing-plans"
+    },
+    {
+      "name": "systematic-debugging",
+      "source": "skills.sh",
+      "url": "https://www.skills.sh/obra/superpowers/systematic-debugging"
+    },
+    {
+      "name": "test-driven-development",
+      "source": "skills.sh",
+      "url": "https://www.skills.sh/obra/superpowers/test-driven-development"
+    },
+    {
+      "name": "verification-before-completion",
+      "source": "skills.sh",
+      "url": "https://www.skills.sh/obra/superpowers/verification-before-completion"
     }
   ]
 }
