@@ -16,6 +16,29 @@ This skill guides the core implementation loop: build a plan, execute it, valida
 
 ## Phase 1 — Plan
 
+### 1.0 Checkout Repository
+
+If the code is not yet checked out, fetch it first:
+
+```bash
+multica repo checkout <url>   # URL from project resources (.multica/project/resources.json)
+```
+
+Then create a feature branch:
+
+```bash
+git checkout -b <issue-identifier>/<short-slug>
+# e.g. git checkout -b APR-47/symphony-execution-skill
+```
+
+If the branch already exists from a prior run, switch to it and rebase:
+
+```bash
+git checkout <branch>
+git fetch origin
+git rebase origin/main
+```
+
 ### 1.1 Create the Workpad
 
 Post a workpad comment immediately. Don't wait until the plan is fully formed:
@@ -151,7 +174,27 @@ pnpm build         # confirm build succeeds (if applicable)
 
 All four must pass. Do not open a PR with a failing gate.
 
-### 2.6 Open the PR
+### 2.6 PR Feedback Sweep
+
+If a PR already exists from a previous run, check for unresolved review comments before proceeding:
+
+```bash
+gh pr view <number> --comments
+```
+
+For each unresolved comment:
+1. Address the requested change in code
+2. Stage and commit the fix
+3. Reply to the comment (or note resolution in the workpad)
+
+After addressing all feedback:
+```bash
+gh pr review <number> --request-review <reviewer>  # re-request if reviewer was dismissed
+```
+
+If no PR exists yet, skip this step.
+
+### 2.7 Open the PR
 
 ```bash
 gh pr create \
@@ -172,7 +215,7 @@ EOF
 )"
 ```
 
-### 2.7 Update State
+### 2.8 Update State
 
 After the PR is opened:
 
