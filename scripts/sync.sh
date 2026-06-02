@@ -119,8 +119,9 @@ info "Fetching current Multica state..."
 CURRENT_AGENTS=$(multica agent list --output json 2>/dev/null || echo "[]")
 CURRENT_SKILLS=$(multica skill list --output json 2>/dev/null || echo "[]")
 CURRENT_RUNTIMES=$(multica runtime list --output json 2>/dev/null || echo "[]")
+CURRENT_SQUADS=$(multica squad list --output json 2>/dev/null || echo "[]")
 
-verbose "Found $(echo "$CURRENT_AGENTS" | jq length) agents, $(echo "$CURRENT_SKILLS" | jq length) skills, $(echo "$CURRENT_RUNTIMES" | jq length) runtimes"
+verbose "Found $(echo "$CURRENT_AGENTS" | jq length) agents, $(echo "$CURRENT_SKILLS" | jq length) skills, $(echo "$CURRENT_RUNTIMES" | jq length) runtimes, $(echo "$CURRENT_SQUADS" | jq length) squads"
 
 # Build runtime provider → id map (e.g. "claude" → UUID)
 while IFS=$'\t' read -r rid rprovider; do
@@ -136,6 +137,11 @@ done < <(echo "$CURRENT_AGENTS" | jq -r '.[] | [.id, .name] | @tsv')
 while IFS=$'\t' read -r id name; do
   store_id "skill" "$name" "$id"
 done < <(echo "$CURRENT_SKILLS" | jq -r '.[] | [.id, .name] | @tsv')
+
+# Build squad name → id map
+while IFS=$'\t' read -r id name; do
+  store_id "squad" "$name" "$id"
+done < <(echo "$CURRENT_SQUADS" | jq -r '.[] | [.id, .name] | @tsv')
 
 # ── Step 1: Sync Agents ───────────────────────────────────────────────────────
 
@@ -359,11 +365,112 @@ squad_file_count=0
 for squad_file in "$MULTICA_DIR"/squads/*.json; do
   [[ -f "$squad_file" ]] || continue
   squad_name=$(jq -r '.name' "$squad_file" 2>/dev/null) || continue
+  squad_description=$(jq -r '.description // ""' "$squad_file")
+  squad_leader_ref=$(jq -r '.leader' "$squad_file")
   squad_file_count=$((squad_file_count + 1))
 
-  # Squad sync deferred — multica squad create/update CLI support pending
-  skip "Squad '$squad_name' sync deferred (multica squad CLI not yet available)"
-  SKIPPED=$((SKIPPED + 1))
+  # Resolve leader ref → agent ID
+  # The ref is the filename stem (e.g. "architect") — find matching agent by
+  # normalising to lowercase+hyphen and comparing against each agent's name.
+  leader_id=$(echo "$CURRENT_AGENTS" | jq -r --arg ref "$squad_leader_ref" '
+    .[] | select((.name | ascii_downcase | gsub(" "; "-")) == $ref) | .id' | head -1)
+  if [[ -z "$leader_id" ]]; then
+    err "Leader agent ref '$squad_leader_ref' not found for squad '$squad_name' — skipping"
+    ERRORS=$((ERRORS + 1))
+    continue
+  fi
+
+  squad_id=$(get_id "squad" "$squad_name")
+
+  if [[ -n "$squad_id" ]]; then
+    verbose "Squad '$squad_name' exists (id=$squad_id), updating..."
+    if $DRY_RUN; then
+      dryrun "Update squad '$squad_name'"
+      UPDATED=$((UPDATED + 1))
+    elif multica squad update "$squad_id" \
+          --description "$squad_description" \
+          --output json > /dev/null; then
+      ok "Squad '$squad_name' updated"
+      UPDATED=$((UPDATED + 1))
+    else
+      err "Failed to update squad '$squad_name'"
+      ERRORS=$((ERRORS + 1))
+      continue
+    fi
+  else
+    verbose "Squad '$squad_name' not found, creating..."
+    if $DRY_RUN; then
+      dryrun "Create squad '$squad_name' (leader=$squad_leader_ref)"
+      store_id "squad" "$squad_name" "dry-run"
+      CREATED=$((CREATED + 1))
+    else
+      new_squad=$(multica squad create \
+          --name "$squad_name" \
+          --description "$squad_description" \
+          --leader "$leader_id" \
+          --output json 2>/dev/null || echo "{}")
+      new_id=$(echo "$new_squad" | jq -r '.id // empty')
+      if [[ -n "$new_id" ]]; then
+        ok "Squad '$squad_name' created (id=$new_id)"
+        store_id "squad" "$squad_name" "$new_id"
+        squad_id="$new_id"
+        CREATED=$((CREATED + 1))
+      else
+        err "Failed to create squad '$squad_name'"
+        ERRORS=$((ERRORS + 1))
+        continue
+      fi
+    fi
+  fi
+
+  # Sync members — read desired member refs from JSON
+  member_count=$(jq '.members | length' "$squad_file")
+  if [[ "$member_count" -eq 0 ]]; then
+    verbose "Squad '$squad_name' has no members configured"
+    continue
+  fi
+
+  # Fetch current members to avoid duplicate adds
+  if [[ -n "$squad_id" ]] && ! $DRY_RUN; then
+    current_members=$(multica squad member list "$squad_id" --output json 2>/dev/null || echo "[]")
+  else
+    current_members="[]"
+  fi
+
+  for i in $(seq 0 $((member_count - 1))); do
+    member_ref=$(jq -r ".members[$i].ref" "$squad_file")
+    member_role=$(jq -r ".members[$i].role // \"member\"" "$squad_file")
+
+    # Resolve member ref → agent ID
+    member_id=$(echo "$CURRENT_AGENTS" | jq -r --arg ref "$member_ref" '
+      .[] | select((.name | ascii_downcase | gsub(" "; "-")) == $ref) | .id' | head -1)
+    if [[ -z "$member_id" ]]; then
+      err "Member agent ref '$member_ref' not found for squad '$squad_name' — skipping member"
+      ERRORS=$((ERRORS + 1))
+      continue
+    fi
+
+    # Check if already a member (field is member_id in the API response)
+    already_member=$(echo "$current_members" | jq -r --arg id "$member_id" '
+      any(.[]; .member_id == $id)')
+
+    if [[ "$already_member" == "true" ]]; then
+      skip "Member '$member_ref' already in squad '$squad_name'"
+      UNCHANGED=$((UNCHANGED + 1))
+    elif $DRY_RUN; then
+      dryrun "Add member '$member_ref' to squad '$squad_name' (role=$member_role)"
+      CREATED=$((CREATED + 1))
+    elif multica squad member add "$squad_id" \
+          --member-id "$member_id" \
+          --role "$member_role" \
+          --output json > /dev/null 2>&1; then
+      ok "Added member '$member_ref' to squad '$squad_name'"
+      CREATED=$((CREATED + 1))
+    else
+      err "Failed to add member '$member_ref' to squad '$squad_name'"
+      ERRORS=$((ERRORS + 1))
+    fi
+  done
 done
 
 if [[ $squad_file_count -eq 0 ]]; then

@@ -1,0 +1,11 @@
+{
+  "name": "Core Engineering",
+  "description": "Primary engineering squad for core platform development",
+  "leader": "architect",
+  "members": [
+    {"ref": "engineer", "role": "member"},
+    {"ref": "frontend-dev", "role": "member"},
+    {"ref": "backend-dev", "role": "member"},
+    {"ref": "deep-researcher", "role": "member"}
+  ]
+}

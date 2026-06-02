@@ -1,0 +1,10 @@
+{
+  "name": "Product",
+  "description": "Product team for requirements, planning, and data-informed decisions",
+  "leader": "pm",
+  "members": [
+    {"ref": "architect", "role": "member"},
+    {"ref": "frontend-dev", "role": "member"},
+    {"ref": "data-scientist", "role": "member"}
+  ]
+}
