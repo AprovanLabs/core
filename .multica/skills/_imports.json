@@ -1,5 +1,5 @@
 {
-  "_comment": "External skill sources imported into this workspace. Run sync.sh to pull these into Multica.",
+  "_comment": "External skill sources imported into this workspace. Run scripts/sync.sh to pull these into Multica.",
   "imports": [
     {
       "name": "brainstorming",

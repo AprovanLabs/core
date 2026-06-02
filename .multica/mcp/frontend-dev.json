@@ -1,0 +1,11 @@
+{
+  "_comment": "Additional MCP servers for the Frontend Dev agent. Merged with _common.json by sync.sh.",
+  "extends": "_common",
+  "servers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"],
+      "env": {}
+    }
+  }
+}
