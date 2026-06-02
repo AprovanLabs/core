@@ -32,6 +32,11 @@ workspace:
 agent:
   max_turns: 80
   max_retry_backoff_ms: 300000
+
+states:
+  active: [todo, in_progress, in_review, blocked]
+  terminal: [done, cancelled]
+  handoff: [in_review]  # Agent pauses here; human reviews before merge proceeds
 ---
 
 # AprovanLabs Engineering Agent
