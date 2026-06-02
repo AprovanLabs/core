@@ -1,0 +1,30 @@
+{
+  "_comment": "Shared defaults applied to all agents unless overridden in individual agent definition files.",
+  "runtimes": {
+    "claude": {
+      "id": "claude",
+      "display_name": "Claude Code",
+      "default_model": "claude-sonnet-4-6"
+    },
+    "opencode": {
+      "id": "opencode",
+      "display_name": "OpenCode",
+      "default_model": "minimax-m3-free"
+    },
+    "gemini": {
+      "id": "gemini",
+      "display_name": "Gemini",
+      "default_model": "gemini-2.5-pro"
+    },
+    "kiro": {
+      "id": "kiro",
+      "display_name": "Kiro",
+      "default_model": "claude-sonnet-4-6"
+    }
+  },
+  "defaults": {
+    "visibility": "workspace",
+    "max_concurrent_tasks": 2,
+    "runtime": "claude"
+  }
+}

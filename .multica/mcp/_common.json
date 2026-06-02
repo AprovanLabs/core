@@ -1,0 +1,20 @@
+{
+  "_comment": "Shared MCP server stubs for common development tools. Per-agent overrides go in <agent-name>.json. Secret values must use env var placeholders, never literal tokens.",
+  "servers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "./"]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-fetch"]
+    }
+  }
+}

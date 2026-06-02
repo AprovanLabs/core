@@ -1,0 +1,10 @@
+{
+  "_comment": "External skill sources imported into this workspace. Run sync.sh to pull these into Multica.",
+  "imports": [
+    {
+      "name": "brainstorming",
+      "source": "skills.sh",
+      "url": "https://www.skills.sh/obra/superpowers/brainstorming"
+    }
+  ]
+}
