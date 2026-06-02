@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/mcp.json",
+  "_comment": "Root MCP config for local Claude Code / OpenCode. Mirrors .multica/mcp/_common.json. Do not commit secrets here — use env var placeholders.",
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "./"]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-fetch"]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-memory"]
+    }
+  }
+}
