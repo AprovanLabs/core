@@ -16,12 +16,29 @@ This skill handles the review and merge lifecycle: responding to PR feedback and
 
 ## Phase 3 — Review Response
 
+### 3.0 Check Review Status
+
+Before acting, determine the current review state:
+
+```bash
+gh pr view <pr-number> --json reviews,reviewDecision
+```
+
+Branch on `reviewDecision`:
+
+- **`"APPROVED"`** → skip Phase 3 entirely, proceed directly to **Phase 4**.
+- **`"CHANGES_REQUESTED"`** → continue to 3.1 to address feedback.
+- **`null`** (no reviews yet) → **exit cleanly**:
+  - Do NOT modify any code or open new commits.
+  - Leave the issue in `in_review`.
+  - The agent will be re-triggered when a review arrives.
+
 ### 3.1 Entry
 
 You are here when:
 - Issue status is `in_review`
 - A PR exists
-- Human reviewer(s) have left feedback
+- `reviewDecision` is `"CHANGES_REQUESTED"`
 
 ### 3.2 Read All Review Feedback
 
@@ -145,6 +162,11 @@ gh pr merge <number> --squash --delete-branch
 
 The squash commit message should summarize the entire PR, not just the last commit.
 
+If the merge fails (conflicts surfaced at merge time, CI newly failing), do not retry blindly:
+- Record the failure in the workpad
+- Set `multica issue status <issue-id> in_progress`
+- Fix the issue (resolve conflicts or fix CI), then return to Phase 4
+
 ### 4.4 Post-Merge Cleanup
 
 1. Transition issue to `done`:
@@ -158,11 +180,12 @@ The squash commit message should summarize the entire PR, not just the last comm
    **Status:** Merged — issue closed.
    ```
 
-3. Update metadata — remove stale `pr_url` or mark pipeline status:
+3. Record merge timestamp and update metadata:
    ```bash
+   multica issue metadata set <issue-id> --key merged_at --value "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
    multica issue metadata set <issue-id> --key pipeline_status --value "merged"
    ```
-   Or delete the pr_url key if it's no longer needed:
+   Delete the `pr_url` key if it is no longer needed:
    ```bash
    multica issue metadata delete <issue-id> --key pr_url
    ```
@@ -188,6 +211,16 @@ If rebase has conflicts:
 5. Confirm CI passes
 
 If conflicts are complex: set status `blocked`, post a comment explaining the conflict and asking for human help.
+
+### CI Fails After Rebase
+
+If CI fails on the rebased branch before merging:
+1. Read the CI failure log: `gh pr checks <number>`
+2. Fix the failing tests or build errors
+3. Commit the fix and push
+4. Wait for CI to pass before retrying the merge
+
+Do not merge with a failing CI — even if the PR is approved.
 
 ### Reviewer Unavailable
 
