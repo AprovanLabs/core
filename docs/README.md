@@ -16,11 +16,11 @@ Write (or update) a doc when:
 
 ```
 docs/
-├── README.md           # This file
-├── tech-stack.md       # Preferred languages, frameworks, and tools
-├── workflow.md         # Symphony-compatible development workflow reference
-└── sdd/                # Software Design Documents
-    └── README.md       # SDD index and authoring guide
+├── README.md                    # This file
+├── tech-stack.md                # Preferred languages, frameworks, and tools
+├── workflow.md                  # Symphony-compatible development workflow reference
+├── agent-config-refactor.md     # Design spec: agent config restructure (APR-52)
+└── <slug>.md                    # Future architecture docs go here (flat, no subdirectories)
 ```
 
 ## Workflow Integration
@@ -33,11 +33,92 @@ Agents follow the Symphony-compatible workflow defined in `WORKFLOW.md` at the r
 4. **Review** — Respond to PR feedback, re-submit for review
 5. **Merge** — Rebase, confirm CI green, merge, close issue
 
-## SDD Workflow
+## Design Spec Workflow
 
-Significant design decisions are captured in `docs/sdd/<slug>.md` before implementation begins. See `docs/sdd/README.md` for the template and authoring guide.
+Significant architectural decisions are captured as design specs directly in `docs/<slug>.md` before implementation begins. Use the `design-planning` skill to guide the authoring process.
 
-Transient coordination (PR status, blocker details, investigation notes) stays in Multica issue comments, not in this docs/ directory.
+**File naming:** `<slug>.md` — lowercase, hyphens, max 40 characters. No subdirectories.
+
+**When to write a design spec:**
+- Introducing a new service, subsystem, or significant package
+- Making a cross-cutting architectural decision (auth strategy, data model, API contract)
+- Choosing between multiple competing technical approaches
+- The implementation scope is large enough that alignment is needed before work begins
+
+You do NOT need a design spec for:
+- Bug fixes (even large ones)
+- UI-only changes
+- Adding a new field to an existing model
+- Refactoring within a well-understood scope
+
+### Design Spec Template
+
+```markdown
+# <Title>
+
+**Status:** Draft | In Review | Accepted | Superseded
+**Author:** <agent-name or human>
+**Issue:** [APR-XX](mention://issue/<uuid>)
+**Date:** YYYY-MM-DD
+
+## Problem Statement
+
+One paragraph: what problem are we solving and why now?
+
+## Goals
+
+- Goal 1
+- Goal 2
+
+## Non-Goals
+
+- Out of scope
+
+## Context & Background
+
+Relevant context: existing systems, constraints, prior decisions.
+
+## Design Alternatives
+
+### Option A — <Name>
+
+Description. Pros. Cons.
+
+### Option B — <Name>
+
+Description. Pros. Cons.
+
+## Chosen Approach
+
+Which option and why.
+
+## Technical Design
+
+### Data Model
+
+<schema or types>
+
+### API Contracts
+
+<endpoints or interfaces>
+
+### Component Diagram
+
+<ASCII or Mermaid diagram>
+
+## Implementation Plan
+
+1. Step 1 ([APR-XX](mention://issue/<uuid>))
+2. Step 2
+
+## Open Questions
+
+- [ ] Question (owner: ?)
+
+## References
+
+- Link
+```
 
 ## Keeping Docs Current
 

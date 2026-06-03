@@ -193,6 +193,8 @@ If no PR exists yet, skip this step.
 
 ### 2.7 Open the PR
 
+**One PR per issue.** Do not open multiple PRs for the same issue unless the issue has been explicitly decomposed into sub-issues. If you find a stale open PR from a prior run, push to that branch instead of opening a new one.
+
 Push the branch first:
 ```bash
 git push -u origin <branch-name>
@@ -208,6 +210,10 @@ Then use the `github` MCP `create_pull_request` tool with these parameters:
 
   <1-3 bullet points describing what changed and why>
 
+  ## Changes
+
+  - <file or component changed>: <what changed>
+
   ## Test Plan
 
   - [ ] <specific test or verification step>
@@ -215,9 +221,13 @@ Then use the `github` MCP `create_pull_request` tool with these parameters:
   - [ ] Lint and type checks pass
 
   Closes: <IDENTIFIER>
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
   ```
 - `head`: <current-branch-name>
 - `base`: main
+
+**PR description is required.** A PR without a Summary, Changes, and Test Plan is incomplete — do not open one.
 
 The tool returns the PR URL — capture it for the next step.
 

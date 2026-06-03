@@ -1,20 +1,32 @@
 #!/usr/bin/env bash
-# sync.sh — Sync .multica/ artifact definitions to the Multica workspace.
+# sync.sh — Generate .multica/ artifacts from canonical sources and sync to Multica.
 #
-# Reads versioned definitions from .multica/ and applies them via the
-# multica CLI. Idempotent — safe to run repeatedly.
+# Canonical sources:
+#   /agents/*.md      — Agent definitions (Markdown + YAML frontmatter)
+#   /agents/defaults.json — Shared defaults (runtimes, concurrency, visibility)
+#   /skills/          — Skill directories (SKILL.md files)
+#   /skills/imports.json  — External skill sources
+#   /mcp.json         — All MCP server definitions
+#   .multica/squads/  — Squad definitions (Multica-specific, not generated)
+#
+# Generated artifacts (do not edit by hand):
+#   .multica/agents/  — JSON agent definitions for Multica platform
+#   .multica/mcp/     — Per-agent MCP configs for Multica platform
+#   .multica/skills/  — Skill files (copied from /skills/)
 #
 # Usage:
-#   ./scripts/sync.sh [--dry-run] [--prune] [--verbose]
+#   ./scripts/sync.sh [--dry-run] [--prune] [--verbose] [--generate-only]
 #
 # Options:
-#   --dry-run   Show what would change without making changes
-#   --prune     Delete Multica resources not present in .multica/ config
-#   --verbose   Print extra detail for each operation
+#   --dry-run       Show what would change without making changes
+#   --prune         Delete Multica resources not present in config
+#   --verbose       Print extra detail for each operation
+#   --generate-only Only generate .multica/ artifacts; skip Multica API sync
 #
 # Requirements:
-#   - multica CLI installed and authenticated
+#   - multica CLI installed and authenticated (unless --generate-only)
 #   - jq installed
+#   - python3 installed (for YAML frontmatter parsing)
 
 set -euo pipefail
 
@@ -22,22 +34,27 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+AGENTS_DIR="$REPO_ROOT/agents"
+SKILLS_DIR="$REPO_ROOT/skills"
+MCP_FILE="$REPO_ROOT/mcp.json"
 MULTICA_DIR="$REPO_ROOT/.multica"
 
 DRY_RUN=false
 PRUNE=false
 VERBOSE=false
+GENERATE_ONLY=false
 
 # ── Argument parsing ─────────────────────────────────────────────────────────
 
 for arg in "$@"; do
   case "$arg" in
-    --dry-run)  DRY_RUN=true  ;;
-    --prune)    PRUNE=true    ;;
-    --verbose)  VERBOSE=true  ;;
+    --dry-run)       DRY_RUN=true       ;;
+    --prune)         PRUNE=true         ;;
+    --verbose)       VERBOSE=true       ;;
+    --generate-only) GENERATE_ONLY=true ;;
     *)
       echo "Unknown option: $arg" >&2
-      echo "Usage: sync.sh [--dry-run] [--prune] [--verbose]" >&2
+      echo "Usage: sync.sh [--dry-run] [--prune] [--verbose] [--generate-only]" >&2
       exit 1
       ;;
   esac
@@ -60,26 +77,291 @@ ERRORS=0
 
 # ── Prerequisite checks ──────────────────────────────────────────────────────
 
-for cmd in multica jq; do
+for cmd in jq python3; do
   if ! command -v "$cmd" &>/dev/null; then
     echo "ERROR: '$cmd' is required but not installed." >&2
     exit 1
   fi
 done
 
-if [ ! -d "$MULTICA_DIR" ]; then
-  echo "ERROR: .multica/ directory not found at $MULTICA_DIR" >&2
+if ! $GENERATE_ONLY; then
+  if ! command -v multica &>/dev/null; then
+    echo "ERROR: 'multica' is required but not installed." >&2
+    exit 1
+  fi
+fi
+
+if [ ! -d "$AGENTS_DIR" ]; then
+  echo "ERROR: /agents/ directory not found at $AGENTS_DIR" >&2
   exit 1
 fi
 
-info "Starting Multica sync from $MULTICA_DIR"
-$DRY_RUN && info "(dry-run mode — no changes will be made)"
-$PRUNE   && info "(prune mode — resources not in config will be deleted)"
+if [ ! -f "$MCP_FILE" ]; then
+  echo "ERROR: mcp.json not found at $MCP_FILE" >&2
+  exit 1
+fi
 
-# ── ID store (bash 3-compatible, no associative arrays) ─────────────────────
-# Uses a temp directory: files named "${kind}_${sanitized_name}" hold IDs.
-# In dry-run mode, planned-but-not-yet-created resources use id="dry-run"
-# as a placeholder so downstream dependency steps can simulate correctly.
+info "Starting sync"
+info "  Agents:  $AGENTS_DIR"
+info "  Skills:  $SKILLS_DIR"
+info "  MCP:     $MCP_FILE"
+info "  Output:  $MULTICA_DIR"
+$DRY_RUN      && info "(dry-run mode — no changes will be made)"
+$GENERATE_ONLY && info "(generate-only mode — Multica API sync skipped)"
+$PRUNE        && info "(prune mode — resources not in config will be deleted)"
+
+# ── Python helper for frontmatter parsing ────────────────────────────────────
+# Outputs JSON: {"name": ..., "description": ..., "skills": [...], "mcp": [...], ...}
+
+parse_frontmatter() {
+  local md_file="$1"
+  python3 - "$md_file" <<'PYEOF'
+import sys, re, json
+
+path = sys.argv[1]
+with open(path) as f:
+    content = f.read()
+
+# Extract YAML frontmatter between --- markers
+m = re.match(r'^---\s*\n(.*?)\n---\s*\n(.*)', content, re.DOTALL)
+if not m:
+    print("{}", file=sys.stderr)
+    print("{}")
+    sys.exit(0)
+
+frontmatter_raw = m.group(1)
+body = m.group(2).strip()
+
+# Simple YAML parser for the subset we use:
+#   scalar: value
+#   key: |
+#     multiline (block scalar)
+#   list:
+#     - item1
+#     - item2
+#   nested:
+#     subkey: value
+
+def parse_simple_yaml(text):
+    result = {}
+    lines = text.split('\n')
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        # Skip blank lines and comments
+        if not line.strip() or line.strip().startswith('#'):
+            i += 1
+            continue
+
+        # Top-level key
+        m = re.match(r'^(\w[\w-]*):\s*(.*)', line)
+        if not m:
+            i += 1
+            continue
+
+        key = m.group(1)
+        val_inline = m.group(2).strip()
+
+        # Block scalar (|)
+        if val_inline == '|':
+            i += 1
+            block_lines = []
+            indent = None
+            while i < len(lines):
+                bl = lines[i]
+                if bl.strip() == '' and indent is None:
+                    i += 1
+                    continue
+                stripped = bl.lstrip()
+                ind = len(bl) - len(stripped)
+                if indent is None:
+                    indent = ind
+                if ind < indent and bl.strip() != '':
+                    break
+                block_lines.append(bl[indent:] if len(bl) >= indent else '')
+                i += 1
+            result[key] = '\n'.join(block_lines).strip()
+            continue
+
+        # Block scalar (>)
+        if val_inline == '>':
+            i += 1
+            block_lines = []
+            indent = None
+            while i < len(lines):
+                bl = lines[i]
+                stripped = bl.lstrip()
+                ind = len(bl) - len(stripped)
+                if indent is None and stripped:
+                    indent = ind
+                if indent is not None and ind < indent and stripped:
+                    break
+                block_lines.append(stripped)
+                i += 1
+            result[key] = ' '.join(block_lines).strip()
+            continue
+
+        # Nested object (value is empty, next lines are indented)
+        if val_inline == '' and i + 1 < len(lines) and lines[i+1].startswith('  '):
+            i += 1
+            nested = {}
+            while i < len(lines) and (lines[i].startswith('  ') or lines[i].strip() == ''):
+                nl = lines[i]
+                nm = re.match(r'\s+(\w[\w-]*):\s*(.*)', nl)
+                if nm:
+                    nested[nm.group(1)] = nm.group(2).strip().strip('"\'')
+                i += 1
+            result[key] = nested
+            continue
+
+        # List (value is empty, next lines start with '  -')
+        if val_inline == '' and i + 1 < len(lines) and re.match(r'\s+-', lines[i+1]):
+            i += 1
+            items = []
+            while i < len(lines) and re.match(r'\s+-', lines[i]):
+                item = re.sub(r'^\s+-\s*', '', lines[i]).strip().strip('"\'')
+                items.append(item)
+                i += 1
+            result[key] = items
+            continue
+
+        # Inline list: [a, b, c]
+        if val_inline.startswith('[') and val_inline.endswith(']'):
+            inner = val_inline[1:-1]
+            items = [x.strip().strip('"\'') for x in inner.split(',') if x.strip()]
+            result[key] = items
+            i += 1
+            continue
+
+        # Scalar
+        val = val_inline.strip().strip('"\'')
+        if val.lower() == 'null' or val == '~':
+            val = None
+        result[key] = val
+        i += 1
+
+    return result
+
+fm = parse_simple_yaml(frontmatter_raw)
+fm['_body'] = body
+print(json.dumps(fm))
+PYEOF
+}
+
+# ── Step 0: Generate .multica/ artifacts from canonical sources ───────────────
+
+info "Step 0: Generating .multica/ artifacts from canonical sources..."
+
+# Create generated directories
+mkdir -p "$MULTICA_DIR/agents"
+mkdir -p "$MULTICA_DIR/mcp"
+mkdir -p "$MULTICA_DIR/skills"
+
+DEFAULTS_FILE="$AGENTS_DIR/defaults.json"
+if [ ! -f "$DEFAULTS_FILE" ]; then
+  err "agents/defaults.json not found — cannot load defaults"
+  exit 1
+fi
+
+DEFAULT_RUNTIME=$(jq -r '.defaults.runtime // "claude"' "$DEFAULTS_FILE")
+DEFAULT_VISIBILITY=$(jq -r '.defaults.visibility // "workspace"' "$DEFAULTS_FILE")
+DEFAULT_MAX_CONCURRENT=$(jq -r '.defaults.max_concurrent_tasks // 2' "$DEFAULTS_FILE")
+
+# Generate .multica/agents/<name>.json from each /agents/<name>.md
+for agent_md in "$AGENTS_DIR"/*.md; do
+  agent_name=$(basename "$agent_md" .md)
+  verbose "Generating agent JSON for: $agent_name"
+
+  fm_json=$(parse_frontmatter "$agent_md")
+  if [ -z "$fm_json" ] || [ "$fm_json" = "{}" ]; then
+    err "Failed to parse frontmatter in $agent_md — skipping"
+    ERRORS=$((ERRORS + 1))
+    continue
+  fi
+
+  # Extract fields from frontmatter
+  name=$(echo "$fm_json" | jq -r '.name // empty')
+  description=$(echo "$fm_json" | jq -r '.description // ""')
+  instructions=$(echo "$fm_json" | jq -r '._body // ""')
+  model=$(echo "$fm_json" | jq -r '.model // ""')
+  runtime=$(echo "$fm_json" | jq -r ".runtime // \"$DEFAULT_RUNTIME\"")
+  max_concurrent=$(echo "$fm_json" | jq -r ".multica.max_concurrent_tasks // $DEFAULT_MAX_CONCURRENT")
+  visibility=$(echo "$fm_json" | jq -r ".multica.visibility // \"$DEFAULT_VISIBILITY\"")
+  skills_json=$(echo "$fm_json" | jq '.skills // []')
+  mcp_json=$(echo "$fm_json" | jq '.mcp // []')
+
+  if [ -z "$name" ]; then
+    err "Missing 'name' in frontmatter of $agent_md — skipping"
+    ERRORS=$((ERRORS + 1))
+    continue
+  fi
+
+  # Build output JSON
+  out_file="$MULTICA_DIR/agents/${agent_name}.json"
+  if $DRY_RUN; then
+    dryrun "Would generate $out_file"
+  else
+    jq -n \
+      --arg name "$name" \
+      --arg description "$description" \
+      --arg instructions "$instructions" \
+      --arg model "$model" \
+      --arg runtime "$runtime" \
+      --argjson max_concurrent "$max_concurrent" \
+      --arg visibility "$visibility" \
+      --argjson skills "$skills_json" \
+      --argjson mcp "$mcp_json" \
+      '{
+        name: $name,
+        description: $description,
+        instructions: $instructions,
+        model: $model,
+        runtime: $runtime,
+        max_concurrent_tasks: $max_concurrent,
+        visibility: $visibility,
+        skills: $skills,
+        mcp: $mcp
+      }' > "$out_file"
+    verbose "  → $out_file"
+  fi
+
+  # Generate .multica/mcp/<agent-name>.json from /mcp.json filtered by agent's mcp list
+  mcp_keys=$(echo "$mcp_json" | jq -r '.[]')
+  if [ -n "$mcp_keys" ]; then
+    mcp_out_file="$MULTICA_DIR/mcp/${agent_name}.json"
+    if $DRY_RUN; then
+      dryrun "Would generate $mcp_out_file"
+    else
+      # Build an object containing only the servers listed in the agent's mcp array
+      filtered_servers=$(jq -n \
+        --argjson mcp_keys "$mcp_json" \
+        --slurpfile all_servers "$MCP_FILE" \
+        '($all_servers[0].servers) as $svrs |
+         { servers: ($mcp_keys | map(. as $k | {($k): $svrs[$k]}) | add // {}) }')
+      echo "$filtered_servers" > "$mcp_out_file"
+      verbose "  → $mcp_out_file"
+    fi
+  fi
+done
+
+# Copy /skills/ → .multica/skills/ (sync, not mirror — preserve any extra state)
+if [ -d "$SKILLS_DIR" ]; then
+  if $DRY_RUN; then
+    dryrun "Would sync $SKILLS_DIR → $MULTICA_DIR/skills/"
+  else
+    rsync -a --delete "$SKILLS_DIR/" "$MULTICA_DIR/skills/"
+    verbose "  → $MULTICA_DIR/skills/ (synced from /skills/)"
+  fi
+fi
+
+info "  Generation complete."
+
+if $GENERATE_ONLY; then
+  info "Skipping Multica API sync (--generate-only)."
+  exit 0
+fi
+
+# ── ID store (bash 3-compatible) ─────────────────────────────────────────────
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
@@ -89,32 +371,21 @@ _sanitize() {
 }
 
 store_id() {
-  # store_id <kind> <name> <id>
   local key
   key="$(_sanitize "$2")"
   printf '%s' "$3" > "$TMP_DIR/${1}_${key}"
 }
 
 get_id() {
-  # get_id <kind> <name>  — prints stored ID or empty string
   local key file
   key="$(_sanitize "$2")"
   file="$TMP_DIR/${1}_${key}"
   [[ -f "$file" ]] && cat "$file" || printf ''
 }
 
-# ── Load defaults ────────────────────────────────────────────────────────────
-
-DEFAULTS_FILE="$MULTICA_DIR/agents/_defaults.json"
-DEFAULT_RUNTIME=$(jq -r '.defaults.runtime // "claude"' "$DEFAULTS_FILE")
-DEFAULT_VISIBILITY=$(jq -r '.defaults.visibility // "workspace"' "$DEFAULTS_FILE")
-DEFAULT_MAX_CONCURRENT=$(jq -r '.defaults.max_concurrent_tasks // 2' "$DEFAULTS_FILE")
-
-verbose "Defaults: runtime=$DEFAULT_RUNTIME visibility=$DEFAULT_VISIBILITY max_concurrent=$DEFAULT_MAX_CONCURRENT"
-
 # ── Fetch current Multica state ──────────────────────────────────────────────
 
-info "Fetching current Multica state..."
+info "Step 1: Fetching current Multica state..."
 
 CURRENT_AGENTS=$(multica agent list --output json 2>/dev/null || echo "[]")
 CURRENT_SKILLS=$(multica skill list --output json 2>/dev/null || echo "[]")
@@ -124,22 +395,18 @@ CURRENT_AUTOPILOTS=$(multica autopilot list --output json 2>/dev/null || echo '{
 
 verbose "Found $(echo "$CURRENT_AGENTS" | jq length) agents, $(echo "$CURRENT_SKILLS" | jq length) skills, $(echo "$CURRENT_RUNTIMES" | jq length) runtimes, $(echo "$CURRENT_SQUADS" | jq length) squads, $(echo "$CURRENT_AUTOPILOTS" | jq '.autopilots | length') autopilots"
 
-# Build runtime provider → id map (e.g. "claude" → UUID)
 while IFS=$'\t' read -r rid rprovider; do
   store_id "runtime" "$rprovider" "$rid"
 done < <(echo "$CURRENT_RUNTIMES" | jq -r '.[] | [.id, .provider] | @tsv')
 
-# Build agent name → id map
 while IFS=$'\t' read -r id name; do
   store_id "agent" "$name" "$id"
 done < <(echo "$CURRENT_AGENTS" | jq -r '.[] | [.id, .name] | @tsv')
 
-# Build skill name → id map
 while IFS=$'\t' read -r id name; do
   store_id "skill" "$name" "$id"
 done < <(echo "$CURRENT_SKILLS" | jq -r '.[] | [.id, .name] | @tsv')
 
-# Build squad name → id map
 while IFS=$'\t' read -r id name; do
   store_id "squad" "$name" "$id"
 done < <(echo "$CURRENT_SQUADS" | jq -r '.[] | [.id, .name] | @tsv')
@@ -149,13 +416,11 @@ while IFS=$'\t' read -r id title; do
   store_id "autopilot" "$title" "$id"
 done < <(echo "$CURRENT_AUTOPILOTS" | jq -r '.autopilots[] | [.id, .title] | @tsv')
 
-# ── Step 1: Sync Agents ───────────────────────────────────────────────────────
+# ── Step 2: Sync Agents ───────────────────────────────────────────────────────
 
-info "Step 1/5: Syncing agents..."
+info "Step 2: Syncing agents..."
 
 for agent_file in "$MULTICA_DIR"/agents/*.json; do
-  [[ "$(basename "$agent_file")" == _* ]] && continue  # skip _defaults.json
-
   name=$(jq -r '.name' "$agent_file")
   description=$(jq -r '.description // ""' "$agent_file")
   instructions=$(jq -r '.instructions // ""' "$agent_file")
@@ -164,7 +429,6 @@ for agent_file in "$MULTICA_DIR"/agents/*.json; do
   max_concurrent=$(jq -r ".max_concurrent_tasks // $DEFAULT_MAX_CONCURRENT" "$agent_file")
   visibility=$(jq -r ".visibility // \"$DEFAULT_VISIBILITY\"" "$agent_file")
 
-  # Resolve runtime provider name → workspace runtime UUID
   runtime_id=$(get_id "runtime" "$runtime")
   if [[ -z "$runtime_id" ]]; then
     err "Runtime provider '$runtime' not found in workspace — skipping agent '$name'"
@@ -196,7 +460,7 @@ for agent_file in "$MULTICA_DIR"/agents/*.json; do
     verbose "Agent '$name' not found, creating..."
     if $DRY_RUN; then
       dryrun "Create agent '$name' (runtime=$runtime model=$model)"
-      store_id "agent" "$name" "dry-run"  # placeholder for Step 3 dry-run simulation
+      store_id "agent" "$name" "dry-run"
       CREATED=$((CREATED + 1))
     else
       new_agent=$(multica agent create \
@@ -221,12 +485,12 @@ for agent_file in "$MULTICA_DIR"/agents/*.json; do
   fi
 done
 
-# ── Step 2: Sync Skills ───────────────────────────────────────────────────────
+# ── Step 3: Sync Skills ───────────────────────────────────────────────────────
 
-info "Step 2/5: Syncing skills..."
+info "Step 3: Syncing skills..."
 
-# 2a: Import external skills from _imports.json
-IMPORTS_FILE="$MULTICA_DIR/skills/_imports.json"
+# 3a: Import external skills from imports.json
+IMPORTS_FILE="$MULTICA_DIR/skills/imports.json"
 if [[ -f "$IMPORTS_FILE" ]]; then
   import_count=$(jq '.imports | length' "$IMPORTS_FILE")
   verbose "Found $import_count external skill import(s)"
@@ -255,20 +519,19 @@ if [[ -f "$IMPORTS_FILE" ]]; then
   done
 fi
 
-# 2b: Sync local SKILL.md files from subdirectories
+# 3b: Sync local SKILL.md files
 for skill_dir in "$MULTICA_DIR"/skills/*/; do
   [[ -f "$skill_dir/SKILL.md" ]] || continue
   skill_name=$(basename "$skill_dir")
   skill_md="$skill_dir/SKILL.md"
 
-  # Extract description from SKILL.md frontmatter (strip surrounding quotes if present)
   skill_description=$(awk '/^description:/{sub(/^description:[[:space:]]*/,""); gsub(/^"|"$/,""); print; exit}' "$skill_md")
   skill_content=$(cat "$skill_md")
 
   skill_id=$(get_id "skill" "$skill_name")
 
   if [[ -n "$skill_id" ]]; then
-    verbose "Skill '$skill_name' exists (id=$skill_id), updating content..."
+    verbose "Skill '$skill_name' exists (id=$skill_id), updating..."
     if $DRY_RUN; then
       dryrun "Update skill '$skill_name'"
       UPDATED=$((UPDATED + 1))
@@ -285,7 +548,7 @@ for skill_dir in "$MULTICA_DIR"/skills/*/; do
     verbose "Skill '$skill_name' not found, creating..."
     if $DRY_RUN; then
       dryrun "Create skill '$skill_name'"
-      store_id "skill" "$skill_name" "dry-run"  # placeholder for Step 3 dry-run simulation
+      store_id "skill" "$skill_name" "dry-run"
       CREATED=$((CREATED + 1))
     else
       new_skill=$(multica skill create \
@@ -306,18 +569,16 @@ for skill_dir in "$MULTICA_DIR"/skills/*/; do
   fi
 done
 
-# ── Step 3: Assign Skills to Agents ──────────────────────────────────────────
+# ── Step 4: Assign Skills to Agents ──────────────────────────────────────────
 
-info "Step 3/5: Assigning skills to agents..."
+info "Step 4: Assigning skills to agents..."
 
 for agent_file in "$MULTICA_DIR"/agents/*.json; do
-  [[ "$(basename "$agent_file")" == _* ]] && continue
-
   agent_name=$(jq -r '.name' "$agent_file")
   agent_id=$(get_id "agent" "$agent_name")
 
   if [[ -z "$agent_id" ]]; then
-    verbose "Skipping skill assignment for '$agent_name' — agent ID unknown (create may have failed)"
+    verbose "Skipping skill assignment for '$agent_name' — agent ID unknown"
     SKIPPED=$((SKIPPED + 1))
     continue
   fi
@@ -363,9 +624,9 @@ for agent_file in "$MULTICA_DIR"/agents/*.json; do
   fi
 done
 
-# ── Step 4: Sync Squads ───────────────────────────────────────────────────────
+# ── Step 5: Sync Squads ───────────────────────────────────────────────────────
 
-info "Step 4/5: Syncing squads..."
+info "Step 5: Syncing squads..."
 
 squad_file_count=0
 for squad_file in "$MULTICA_DIR"/squads/*.json; do
@@ -375,9 +636,6 @@ for squad_file in "$MULTICA_DIR"/squads/*.json; do
   squad_leader_ref=$(jq -r '.leader' "$squad_file")
   squad_file_count=$((squad_file_count + 1))
 
-  # Resolve leader ref → agent ID
-  # The ref is the filename stem (e.g. "architect") — find matching agent by
-  # normalising to lowercase+hyphen and comparing against each agent's name.
   leader_id=$(echo "$CURRENT_AGENTS" | jq -r --arg ref "$squad_leader_ref" '
     .[] | select((.name | ascii_downcase | gsub(" "; "-")) == $ref) | .id' | head -1)
   if [[ -z "$leader_id" ]]; then
@@ -429,14 +687,12 @@ for squad_file in "$MULTICA_DIR"/squads/*.json; do
     fi
   fi
 
-  # Sync members — read desired member refs from JSON
   member_count=$(jq '.members | length' "$squad_file")
   if [[ "$member_count" -eq 0 ]]; then
     verbose "Squad '$squad_name' has no members configured"
     continue
   fi
 
-  # Fetch current members to avoid duplicate adds
   if [[ -n "$squad_id" ]] && ! $DRY_RUN; then
     current_members=$(multica squad member list "$squad_id" --output json 2>/dev/null || echo "[]")
   else
@@ -447,7 +703,6 @@ for squad_file in "$MULTICA_DIR"/squads/*.json; do
     member_ref=$(jq -r ".members[$i].ref" "$squad_file")
     member_role=$(jq -r ".members[$i].role // \"member\"" "$squad_file")
 
-    # Resolve member ref → agent ID
     member_id=$(echo "$CURRENT_AGENTS" | jq -r --arg ref "$member_ref" '
       .[] | select((.name | ascii_downcase | gsub(" "; "-")) == $ref) | .id' | head -1)
     if [[ -z "$member_id" ]]; then
@@ -456,7 +711,6 @@ for squad_file in "$MULTICA_DIR"/squads/*.json; do
       continue
     fi
 
-    # Check if already a member (field is member_id in the API response)
     already_member=$(echo "$current_members" | jq -r --arg id "$member_id" '
       any(.[]; .member_id == $id)')
 
