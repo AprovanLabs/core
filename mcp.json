@@ -1,5 +1,4 @@
 {
-  "_comment": "Shared MCP server stubs for common development tools. Per-agent overrides go in <agent-name>.json. Secret values must use env var placeholders, never literal tokens.",
   "servers": {
     "github": {
       "command": "npx",
@@ -21,6 +20,16 @@
     "memory": {
       "command": "npx",
       "args": ["-y", "@anthropic-ai/mcp-server-memory"],
+      "env": {}
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {}
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"],
       "env": {}
     }
   }

@@ -1,5 +1,4 @@
 {
-  "_comment": "Shared defaults applied to all agents unless overridden in individual agent definition files.",
   "runtimes": {
     "claude": {
       "id": "claude",

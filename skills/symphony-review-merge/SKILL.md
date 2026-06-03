@@ -41,6 +41,15 @@ You are here when:
 - A PR exists
 - `reviewDecision` is `"CHANGES_REQUESTED"`
 
+### Code Review Automation
+
+When a PR is opened on an issue, the implementing agent should post a comment on the Multica issue requesting a code review. The Coordinator or any agent with the `code-review` skill can then review the PR and post their decision as a comment on the issue:
+
+- **Approved**: Post "Code review approved. PR: <url>" and proceed to Phase 4.
+- **Changes requested**: Post "Changes requested on PR <url>: <summary of feedback>" — the implementing agent will address the feedback and re-submit.
+
+This keeps review feedback visible in the issue timeline alongside the implementation history, rather than buried in GitHub review threads.
+
 ### 3.2 Read All Review Feedback
 
 Get the PR number from metadata:
