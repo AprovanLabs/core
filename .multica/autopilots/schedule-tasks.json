@@ -1,0 +1,19 @@
+{
+  "title": "Schedule Tasks",
+  "description": "# Goal\n\nStart implementing open tasks for the time period.\n\n\n\n## Workflow\n\n- Look at any Multica issues in the backlog\n- For each issue, if there is no assignee, take a look at the issue contents. If the issue has a dependency on another issue that has not been completed, do NOT modify it.\n- For all issues without open dependencies, move each issue into 'Todo' and add an assignee\n- Look for any 'In progress' issues with the latest activity from an assigned agent being a message including the phrase \"\u201cYou\u2019ve hit your limit\u201d\". Prompt this agent to continue.",
+  "agent": "coordinator",
+  "mode": "run_only",
+  "priority": "none",
+  "project": null,
+  "issue_title_template": null,
+  "status": "active",
+  "triggers": [
+    {
+      "kind": "schedule",
+      "cron": "0 */1 * * *",
+      "timezone": "America/Chicago",
+      "label": "Hourly backlog sweep",
+      "enabled": true
+    }
+  ]
+}

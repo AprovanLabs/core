@@ -16,6 +16,8 @@ Versioned Multica artifact definitions for the AprovanLabs workspace. These file
 │   └── <name>.json          # Squad definitions with leader and member lists (added in APR-41)
 ├── mcp/
 │   └── _common.json         # Shared MCP server stubs for common development tools
+├── autopilots/
+│   └── <name>.json          # Autopilot definitions: scheduled/webhook automations (added in APR-53)
 └── README.md                # This file
 ```
 
@@ -39,9 +41,17 @@ One JSON file per squad. Each file names the squad's leader agent and its member
 
 MCP server configuration stubs. `_common.json` lists servers relevant to all or most agents (GitHub, filesystem, web fetch). Per-agent overrides can be added as `<agent-name>.json`. These are ready to sync once Multica ships a CLI surface for per-agent MCP config.
 
+### `autopilots/`
+
+One JSON file per autopilot. Each file defines a scheduled or webhook-triggered automation: its assigned agent, execution mode, task prompt (description), and trigger configuration. The sync script creates or updates these via `multica autopilot create/update` and `multica autopilot trigger-add/update`.
+
+**Schema:** Each file has `title`, `description`, `agent` (name, resolved to ID at sync time), `mode` (`run_only` or `create_issue`), `priority`, `project` (null or project ID/name), `issue_title_template` (null or string with `{{date}}`), `status` (`active` or `paused`), and a `triggers` array. Each trigger has `kind` (`schedule` or `webhook`), and for schedule triggers: `cron`, `timezone`, `label`, and `enabled`.
+
+**Webhook triggers:** When a webhook trigger is created, the platform generates a URL containing a signing secret. This URL is logged to stdout by the sync script and must be stored securely — it is never committed to this directory.
+
 ## Sync Workflow
 
-A `sync.sh` script (added in APR-40) will make this declarative config live by diffing local definitions against current Multica state and applying creates/updates. It is designed to be idempotent — safe to run at any time.
+`scripts/sync.sh` makes this declarative config live by diffing local definitions against current Multica state and applying creates/updates. It is designed to be idempotent — safe to run at any time.
 
 **Rough flow:**
 1. Load `agents/_defaults.json` for shared values.
@@ -50,6 +60,7 @@ A `sync.sh` script (added in APR-40) will make this declarative config live by d
 4. For each `skills/<name>/`, sync local skill files via `multica skill files upsert`.
 5. Assign skills to agents per their `skills` arrays.
 6. For each `squads/<name>.json`, create/update the squad and its membership.
+7. For each `autopilots/<name>.json`, create/update the autopilot and sync its triggers.
 
 ## Secrets
 

@@ -120,8 +120,9 @@ CURRENT_AGENTS=$(multica agent list --output json 2>/dev/null || echo "[]")
 CURRENT_SKILLS=$(multica skill list --output json 2>/dev/null || echo "[]")
 CURRENT_RUNTIMES=$(multica runtime list --output json 2>/dev/null || echo "[]")
 CURRENT_SQUADS=$(multica squad list --output json 2>/dev/null || echo "[]")
+CURRENT_AUTOPILOTS=$(multica autopilot list --output json 2>/dev/null || echo '{"autopilots":[],"total":0}')
 
-verbose "Found $(echo "$CURRENT_AGENTS" | jq length) agents, $(echo "$CURRENT_SKILLS" | jq length) skills, $(echo "$CURRENT_RUNTIMES" | jq length) runtimes, $(echo "$CURRENT_SQUADS" | jq length) squads"
+verbose "Found $(echo "$CURRENT_AGENTS" | jq length) agents, $(echo "$CURRENT_SKILLS" | jq length) skills, $(echo "$CURRENT_RUNTIMES" | jq length) runtimes, $(echo "$CURRENT_SQUADS" | jq length) squads, $(echo "$CURRENT_AUTOPILOTS" | jq '.autopilots | length') autopilots"
 
 # Build runtime provider → id map (e.g. "claude" → UUID)
 while IFS=$'\t' read -r rid rprovider; do
@@ -143,9 +144,14 @@ while IFS=$'\t' read -r id name; do
   store_id "squad" "$name" "$id"
 done < <(echo "$CURRENT_SQUADS" | jq -r '.[] | [.id, .name] | @tsv')
 
+# Build autopilot title → id map
+while IFS=$'\t' read -r id title; do
+  store_id "autopilot" "$title" "$id"
+done < <(echo "$CURRENT_AUTOPILOTS" | jq -r '.autopilots[] | [.id, .title] | @tsv')
+
 # ── Step 1: Sync Agents ───────────────────────────────────────────────────────
 
-info "Step 1/4: Syncing agents..."
+info "Step 1/5: Syncing agents..."
 
 for agent_file in "$MULTICA_DIR"/agents/*.json; do
   [[ "$(basename "$agent_file")" == _* ]] && continue  # skip _defaults.json
@@ -217,7 +223,7 @@ done
 
 # ── Step 2: Sync Skills ───────────────────────────────────────────────────────
 
-info "Step 2/4: Syncing skills..."
+info "Step 2/5: Syncing skills..."
 
 # 2a: Import external skills from _imports.json
 IMPORTS_FILE="$MULTICA_DIR/skills/_imports.json"
@@ -302,7 +308,7 @@ done
 
 # ── Step 3: Assign Skills to Agents ──────────────────────────────────────────
 
-info "Step 3/4: Assigning skills to agents..."
+info "Step 3/5: Assigning skills to agents..."
 
 for agent_file in "$MULTICA_DIR"/agents/*.json; do
   [[ "$(basename "$agent_file")" == _* ]] && continue
@@ -359,7 +365,7 @@ done
 
 # ── Step 4: Sync Squads ───────────────────────────────────────────────────────
 
-info "Step 4/4: Syncing squads..."
+info "Step 4/5: Syncing squads..."
 
 squad_file_count=0
 for squad_file in "$MULTICA_DIR"/squads/*.json; do
@@ -475,6 +481,218 @@ done
 
 if [[ $squad_file_count -eq 0 ]]; then
   verbose "No squad definitions found"
+fi
+
+# ── Step 5: Sync Autopilots ───────────────────────────────────────────────────
+
+info "Step 5/5: Syncing autopilots..."
+
+autopilot_file_count=0
+for autopilot_file in "$MULTICA_DIR"/autopilots/*.json; do
+  [[ -f "$autopilot_file" ]] || continue
+  autopilot_title=$(jq -r '.title' "$autopilot_file" 2>/dev/null) || continue
+  autopilot_description=$(jq -r '.description // ""' "$autopilot_file")
+  autopilot_agent_ref=$(jq -r '.agent' "$autopilot_file")
+  autopilot_mode=$(jq -r '.mode // "run_only"' "$autopilot_file")
+  autopilot_priority=$(jq -r '.priority // "none"' "$autopilot_file")
+  autopilot_status=$(jq -r '.status // "active"' "$autopilot_file")
+  autopilot_project=$(jq -r '.project // ""' "$autopilot_file")
+  autopilot_issue_title_template=$(jq -r '.issue_title_template // ""' "$autopilot_file")
+  autopilot_file_count=$((autopilot_file_count + 1))
+
+  # Resolve agent ref → agent ID (same normalisation as squads)
+  agent_id_for_autopilot=$(echo "$CURRENT_AGENTS" | jq -r --arg ref "$autopilot_agent_ref" '
+    .[] | select((.name | ascii_downcase | gsub(" "; "-")) == $ref) | .id' | head -1)
+  if [[ -z "$agent_id_for_autopilot" ]]; then
+    err "Agent ref '$autopilot_agent_ref' not found for autopilot '$autopilot_title' — skipping"
+    ERRORS=$((ERRORS + 1))
+    continue
+  fi
+
+  autopilot_id=$(get_id "autopilot" "$autopilot_title")
+
+  if [[ -n "$autopilot_id" ]]; then
+    verbose "Autopilot '$autopilot_title' exists (id=$autopilot_id), updating..."
+    if $DRY_RUN; then
+      dryrun "Update autopilot '$autopilot_title' (agent=$autopilot_agent_ref mode=$autopilot_mode)"
+      UPDATED=$((UPDATED + 1))
+    else
+      update_args=(--description "$autopilot_description" --agent "$agent_id_for_autopilot" --mode "$autopilot_mode" --status "$autopilot_status")
+      [[ -n "$autopilot_priority" ]] && update_args+=(--priority "$autopilot_priority")
+      [[ -n "$autopilot_project" ]] && update_args+=(--project "$autopilot_project")
+      if multica autopilot update "$autopilot_id" "${update_args[@]}" --output json > /dev/null; then
+        ok "Autopilot '$autopilot_title' updated"
+        UPDATED=$((UPDATED + 1))
+      else
+        err "Failed to update autopilot '$autopilot_title'"
+        ERRORS=$((ERRORS + 1))
+        continue
+      fi
+    fi
+  else
+    verbose "Autopilot '$autopilot_title' not found, creating..."
+    if $DRY_RUN; then
+      dryrun "Create autopilot '$autopilot_title' (agent=$autopilot_agent_ref mode=$autopilot_mode)"
+      store_id "autopilot" "$autopilot_title" "dry-run"
+      autopilot_id="dry-run"
+      CREATED=$((CREATED + 1))
+    else
+      create_args=(--title "$autopilot_title" --description "$autopilot_description" --agent "$agent_id_for_autopilot" --mode "$autopilot_mode")
+      [[ -n "$autopilot_priority" ]] && create_args+=(--priority "$autopilot_priority")
+      [[ -n "$autopilot_project" ]] && create_args+=(--project "$autopilot_project")
+      [[ -n "$autopilot_issue_title_template" ]] && create_args+=(--issue-title-template "$autopilot_issue_title_template")
+      new_autopilot=$(multica autopilot create "${create_args[@]}" --output json 2>/dev/null || echo "{}")
+      new_id=$(echo "$new_autopilot" | jq -r '.id // empty')
+      if [[ -n "$new_id" ]]; then
+        ok "Autopilot '$autopilot_title' created (id=$new_id)"
+        store_id "autopilot" "$autopilot_title" "$new_id"
+        autopilot_id="$new_id"
+        CREATED=$((CREATED + 1))
+      else
+        err "Failed to create autopilot '$autopilot_title'"
+        ERRORS=$((ERRORS + 1))
+        continue
+      fi
+    fi
+  fi
+
+  # Sync triggers
+  trigger_count=$(jq '.triggers | length' "$autopilot_file")
+  if [[ "$trigger_count" -eq 0 ]]; then
+    verbose "Autopilot '$autopilot_title' has no triggers configured"
+    continue
+  fi
+
+  # Fetch current triggers for this autopilot
+  if [[ "$autopilot_id" != "dry-run" ]] && ! $DRY_RUN; then
+    current_triggers=$(multica autopilot get "$autopilot_id" --output json 2>/dev/null | jq '.triggers // []')
+  else
+    current_triggers="[]"
+  fi
+
+  for i in $(seq 0 $((trigger_count - 1))); do
+    trigger_kind=$(jq -r ".triggers[$i].kind" "$autopilot_file")
+    trigger_cron=$(jq -r ".triggers[$i].cron // \"\"" "$autopilot_file")
+    trigger_timezone=$(jq -r ".triggers[$i].timezone // \"UTC\"" "$autopilot_file")
+    trigger_label=$(jq -r ".triggers[$i].label // \"\"" "$autopilot_file")
+    trigger_enabled=$(jq -r ".triggers[$i].enabled // true" "$autopilot_file")
+
+    # Match existing trigger by (kind+label) when label is set, or (kind+cron) for unlabeled schedules
+    existing_trigger_id=""
+    if [[ -n "$trigger_label" ]]; then
+      existing_trigger_id=$(echo "$current_triggers" | jq -r --arg k "$trigger_kind" --arg l "$trigger_label" \
+        '.[] | select(.kind == $k and .label == $l) | .id' | head -1)
+    elif [[ "$trigger_kind" == "schedule" && -n "$trigger_cron" ]]; then
+      existing_trigger_id=$(echo "$current_triggers" | jq -r --arg k "$trigger_kind" --arg c "$trigger_cron" \
+        '.[] | select(.kind == $k and .cron_expression == $c) | .id' | head -1)
+    fi
+
+    if [[ -n "$existing_trigger_id" ]]; then
+      verbose "Trigger '$trigger_kind/$trigger_label' exists for '$autopilot_title', updating..."
+      if $DRY_RUN; then
+        dryrun "Update trigger '$trigger_kind' on '$autopilot_title'"
+        UPDATED=$((UPDATED + 1))
+      else
+        update_trigger_args=()
+        [[ "$trigger_kind" == "schedule" ]] && update_trigger_args+=(--cron "$trigger_cron" --timezone "$trigger_timezone")
+        [[ -n "$trigger_label" ]] && update_trigger_args+=(--label "$trigger_label")
+        update_trigger_args+=(--enabled "$trigger_enabled")
+        if multica autopilot trigger-update "$autopilot_id" "$existing_trigger_id" \
+              "${update_trigger_args[@]}" --output json > /dev/null; then
+          ok "Trigger '$trigger_kind' updated on autopilot '$autopilot_title'"
+          UPDATED=$((UPDATED + 1))
+        else
+          err "Failed to update trigger '$trigger_kind' on autopilot '$autopilot_title'"
+          ERRORS=$((ERRORS + 1))
+        fi
+      fi
+    else
+      verbose "Trigger '$trigger_kind/$trigger_label' not found for '$autopilot_title', creating..."
+      if $DRY_RUN; then
+        dryrun "Add trigger '$trigger_kind' to '$autopilot_title'"
+        CREATED=$((CREATED + 1))
+      elif [[ "$trigger_kind" == "schedule" ]]; then
+        add_args=(--kind schedule --cron "$trigger_cron" --timezone "$trigger_timezone")
+        [[ -n "$trigger_label" ]] && add_args+=(--label "$trigger_label")
+        if multica autopilot trigger-add "$autopilot_id" "${add_args[@]}" --output json > /dev/null; then
+          ok "Schedule trigger added to autopilot '$autopilot_title' (cron=$trigger_cron)"
+          CREATED=$((CREATED + 1))
+        else
+          err "Failed to add schedule trigger to autopilot '$autopilot_title'"
+          ERRORS=$((ERRORS + 1))
+        fi
+      elif [[ "$trigger_kind" == "webhook" ]]; then
+        add_args=(--kind webhook)
+        [[ -n "$trigger_label" ]] && add_args+=(--label "$trigger_label")
+        webhook_result=$(multica autopilot trigger-add "$autopilot_id" "${add_args[@]}" --output json 2>/dev/null || echo "{}")
+        webhook_url=$(echo "$webhook_result" | jq -r '.webhook_url // empty')
+        if [[ -n "$webhook_url" ]]; then
+          ok "Webhook trigger added to autopilot '$autopilot_title'"
+          info "  ⚠ Webhook URL (store securely, not committed to config): $webhook_url"
+          CREATED=$((CREATED + 1))
+        else
+          err "Failed to add webhook trigger to autopilot '$autopilot_title'"
+          ERRORS=$((ERRORS + 1))
+        fi
+      else
+        err "Unknown trigger kind '$trigger_kind' for autopilot '$autopilot_title'"
+        ERRORS=$((ERRORS + 1))
+      fi
+    fi
+  done
+
+  # Prune triggers not in config
+  if $PRUNE && [[ "$autopilot_id" != "dry-run" ]] && ! $DRY_RUN; then
+    while IFS=$'\t' read -r et_id et_kind et_label et_cron; do
+      matched=false
+      for i in $(seq 0 $((trigger_count - 1))); do
+        cfg_kind=$(jq -r ".triggers[$i].kind" "$autopilot_file")
+        cfg_label=$(jq -r ".triggers[$i].label // \"\"" "$autopilot_file")
+        cfg_cron=$(jq -r ".triggers[$i].cron // \"\"" "$autopilot_file")
+        if [[ "$et_kind" == "$cfg_kind" ]]; then
+          if [[ -n "$cfg_label" && "$et_label" == "$cfg_label" ]]; then matched=true; break; fi
+          if [[ -z "$cfg_label" && "$et_cron" == "$cfg_cron" ]]; then matched=true; break; fi
+        fi
+      done
+      if ! $matched; then
+        if multica autopilot trigger-delete "$autopilot_id" "$et_id" --output json > /dev/null 2>&1; then
+          ok "Pruned trigger '$et_kind/$et_label' from autopilot '$autopilot_title'"
+        else
+          err "Failed to prune trigger '$et_kind/$et_label' from autopilot '$autopilot_title'"
+          ERRORS=$((ERRORS + 1))
+        fi
+      fi
+    done < <(echo "$current_triggers" | jq -r '.[] | [.id, .kind, (.label // ""), (.cron_expression // "")] | @tsv')
+  fi
+done
+
+# Prune autopilots not in config
+if $PRUNE && ! $DRY_RUN; then
+  while IFS=$'\t' read -r ap_id ap_title; do
+    config_file="$MULTICA_DIR/autopilots"
+    # Check if any config file has this title
+    found_in_config=false
+    for f in "$MULTICA_DIR"/autopilots/*.json; do
+      [[ -f "$f" ]] || continue
+      file_title=$(jq -r '.title' "$f" 2>/dev/null)
+      if [[ "$file_title" == "$ap_title" ]]; then
+        found_in_config=true
+        break
+      fi
+    done
+    if ! $found_in_config; then
+      if multica autopilot delete "$ap_id" --output json > /dev/null 2>&1; then
+        ok "Pruned autopilot '$ap_title'"
+      else
+        err "Failed to prune autopilot '$ap_title'"
+        ERRORS=$((ERRORS + 1))
+      fi
+    fi
+  done < <(echo "$CURRENT_AUTOPILOTS" | jq -r '.autopilots[] | [.id, .title] | @tsv')
+fi
+
+if [[ $autopilot_file_count -eq 0 ]]; then
+  verbose "No autopilot definitions found"
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
