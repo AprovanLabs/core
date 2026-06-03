@@ -288,7 +288,9 @@ for agent_md in "$AGENTS_DIR"/*.md; do
   max_concurrent=$(echo "$fm_json" | jq -r ".multica.max_concurrent_tasks // $DEFAULT_MAX_CONCURRENT")
   visibility=$(echo "$fm_json" | jq -r ".multica.visibility // \"$DEFAULT_VISIBILITY\"")
   skills_json=$(echo "$fm_json" | jq '.skills // []')
-  mcp_json=$(echo "$fm_json" | jq '.mcp // []')
+  # Default: all servers when mcp key is omitted from frontmatter
+  all_mcp_keys=$(jq -r '.servers | keys' "$MCP_FILE")
+  mcp_json=$(echo "$fm_json" | jq --argjson all "$all_mcp_keys" 'if has("mcp") then .mcp else $all end')
 
   if [ -z "$name" ]; then
     err "Missing 'name' in frontmatter of $agent_md — skipping"
@@ -325,7 +327,7 @@ for agent_md in "$AGENTS_DIR"/*.md; do
     verbose "  → $out_file"
   fi
 
-  # Generate .multica/mcp/<agent-name>.json from /mcp.json filtered by agent's mcp list
+  # Generate .multica/mcp/<agent-name>.json — filtered by agent's mcp list (all if omitted)
   mcp_keys=$(echo "$mcp_json" | jq -r '.[]')
   if [ -n "$mcp_keys" ]; then
     mcp_out_file="$MULTICA_DIR/mcp/${agent_name}.json"

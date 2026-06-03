@@ -146,6 +146,23 @@ Apply the first matching row top-to-bottom:
 | Investigate Blocker | See blocker handling below |
 | Exit | Post a brief comment stating current state, then stop |
 
+## Research-to-Implementation Gate
+
+**Do not route a research output directly to implementation.** When an issue type is "research" or "investigation" and the research deliverable has been posted (as a comment or doc), the flow is:
+
+1. **Research agent** posts findings as an issue comment and sets status to `in_review`
+2. **PM or Coordinator** reviews the findings, creates sub-issues for each concrete action item, and sets status to `done` on the research issue (or transitions sub-issues to `todo`)
+3. **Implementing agents** (Engineer, Backend Dev, Frontend Dev) pick up the sub-issues
+
+**How to detect a research task:** the issue description contains phrases like "research", "investigate", "audit", "compare", "analysis", or the Coordinator tagged it for the Deep Researcher.
+
+**When routed as an engineer to a research-complete issue:** if you see only a research report with no actionable sub-issues and no code branch, do NOT start implementing. Instead:
+- Verify the research is complete (findings comment posted)
+- Create sub-issues for each action item identified in the research
+- Set each sub-issue to `todo` with an appropriate assignee
+- Post a comment summarizing the decomposition
+- Transition the parent issue to `done` (research phase complete)
+
 ## Blocker Handling
 
 When routed to **Investigate Blocker** (issue status is `blocked`, or active blocked-by relations found):

@@ -10,3 +10,6 @@ pnpm-lock.yaml
 .multica/agents/
 .multica/mcp/
 .multica/skills/
+
+# Local symlink created by scripts/setup.sh (machine-specific)
+.agents/
