@@ -65,19 +65,24 @@ Check metadata first (fast path):
 multica issue metadata list <issue-id> --output json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('pr_url','none'))"
 ```
 
-If not in metadata, search GitHub (slower):
-```bash
-gh pr list --search "<issue-identifier>" --state all --json url,number,state,headRefName
-```
+If not in metadata, search GitHub using the `github` MCP `list_pull_requests` tool:
+- `owner`: AprovanLabs
+- `repo`: core (or patchwork — check project resources)
+- `state`: all
+- `head`: <branch-name-slug> (optional filter)
+
+Or use `search_issues` with query `<issue-identifier> is:pr repo:AprovanLabs/core`.
 
 ### Signal 4: PR State
 
-If a PR URL is known, get full state:
-```bash
-gh pr view <number> --json state,mergeable,reviewDecision,statusCheckRollup,reviews
-```
+If a PR URL is known, get full state using the `github` MCP `get_pull_request` tool:
+- `owner`: AprovanLabs
+- `repo`: core (or patchwork)
+- `pull_number`: <number from pr_url>
 
-Key fields to check: `state` (open/closed/merged), `reviewDecision` (APPROVED / CHANGES_REQUESTED / null), `statusCheckRollup` (CI status).
+Key fields to check: `state` (open/closed/merged), `reviewDecision` (APPROVED / CHANGES_REQUESTED / null).
+
+For CI status, use the `github` MCP `get_pull_request_status` tool with the same parameters.
 
 ### Signal 5: Blocker Status
 
@@ -173,8 +178,8 @@ multica issue status <issue-id> blocked
 **Stale workpad (attempt ≥ 2, same state):** Before restarting, check for prior branch work:
 ```bash
 git branch -a | grep -i "<issue-identifier-slug>"
-gh pr list --state all --search "<identifier>"
 ```
+Also use the `github` MCP `list_pull_requests` tool (`owner: AprovanLabs`, `repo: <repo>`, `state: all`) to find stale PRs.
 Resume from existing work rather than starting fresh.
 
 **Workpad Phase says "Plan" but no code committed:** Resume Phase 1 — finish the plan and begin execution.
@@ -185,7 +190,7 @@ Resume from existing work rather than starting fresh.
 
 If `attempt` > 1 and the issue is stuck in the same state with no visible progress:
 1. Check `git log` for commits since the issue was created
-2. Check CI results: `gh pr checks <number>`
+2. Check CI results: use the `github` MCP `get_pull_request_status` tool (`owner: AprovanLabs`, `repo: <repo>`, `pull_number: <n>`)
 3. If a branch exists with work: read it — don't throw it away
 4. If truly stuck with no path forward: set status `blocked`, set `blocked_reason` metadata, post a comment explaining the specific obstacle
 

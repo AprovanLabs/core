@@ -130,12 +130,15 @@ Determine where you are and jump to the right phase:
    pnpm typecheck   # type checks
    ```
 4. Confirm CI would pass (no red checks expected).
-5. Open a PR:
-   ```bash
-   gh pr create \
-     --title "<APR-XX>: <short description>" \
-     --body "Closes: {{ issue.identifier }}\n\n## Summary\n\n<what changed and why>\n\n## Test Plan\n\n- [ ] <test step>"
-   ```
+5. Push the branch and open a PR using the `github` MCP `create_pull_request` tool:
+   - First: `git push -u origin <branch-name>`
+   - Then call `create_pull_request` with:
+     - `owner`: AprovanLabs
+     - `repo`: core (or patchwork — whichever was checked out)
+     - `title`: "<APR-XX>: <short description>"
+     - `body`: "Closes: {{ issue.identifier }}\n\n## Summary\n\n<what changed and why>\n\n## Test Plan\n\n- [ ] <test step>"
+     - `head`: <current-branch-name>
+     - `base`: main
 6. Update the workpad with PR URL and phase.
 7. Transition to `in_review`:
    ```
@@ -160,12 +163,12 @@ Determine where you are and jump to the right phase:
 
 ### Steps
 
-1. Read all PR review comments via `gh pr view <number> --comments`.
+1. Read all PR review comments using the `github` MCP `get_pull_request_reviews` and `get_pull_request_comments` tools (pass `owner: AprovanLabs`, `repo: <repo>`, `pull_number: <number>`).
 2. If changes requested:
    - Set issue back to `in_progress`: `multica issue status {{ issue.id }} in_progress`
    - Address each comment in a new commit. Never force-push.
    - Reply to each review comment (even if just "Done" or "Addressed in <commit>").
-   - Re-request review: `gh pr review <number> --request`
+   - Re-request review: use the `github` MCP `create_pull_request_review` tool with `event: "COMMENT"` and a note that all feedback has been addressed, or use the GitHub API `request_reviewers` tool if available.
    - Update the workpad with the review round number and status.
    - Transition back to `in_review`: `multica issue status {{ issue.id }} in_review`
 3. If approved → proceed to Phase 4.
@@ -189,10 +192,11 @@ Determine where you are and jump to the right phase:
    git push --force-with-lease
    ```
 2. Confirm CI passes on the rebased state.
-3. Merge the PR (squash merge):
-   ```bash
-   gh pr merge <number> --squash --delete-branch
-   ```
+3. Merge the PR (squash merge) using the `github` MCP `merge_pull_request` tool:
+   - `owner`: AprovanLabs
+   - `repo`: core (or patchwork)
+   - `pull_number`: <number>
+   - `merge_method`: squash
 4. Transition issue to `done`:
    ```
    multica issue status {{ issue.id }} done
