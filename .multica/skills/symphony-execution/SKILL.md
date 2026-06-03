@@ -68,7 +68,7 @@ multica issue comment add <issue-id> --content "## Agent Workpad
 
 Before writing any new code:
 1. Check for existing branches: `git branch -a | grep <issue-identifier-slug>`
-2. Check for any stale PRs: `gh pr list --state all --search "<identifier>"`
+2. Check for any stale PRs: use the `github` MCP `list_pull_requests` tool (`owner: AprovanLabs`, `repo: <repo>`, `state: all`) or `search_issues` with query `<identifier> is:pr`. Also check the `pr_url` metadata key.
 3. If prior work exists: check it out, evaluate what's done vs. what's needed
 
 ### 1.4 Explore the Codebase
@@ -176,44 +176,50 @@ All four must pass. Do not open a PR with a failing gate.
 
 ### 2.6 PR Feedback Sweep
 
-If a PR already exists from a previous run, check for unresolved review comments before proceeding:
+If a PR already exists from a previous run, check for unresolved review comments before proceeding.
 
-```bash
-gh pr view <number> --comments
-```
+Use the `github` MCP tools:
+- `get_pull_request_reviews` (`owner: AprovanLabs`, `repo: <repo>`, `pull_number: <n>`) — review decisions and review-level comments
+- `get_pull_request_comments` (`owner: AprovanLabs`, `repo: <repo>`, `pull_number: <n>`) — inline code review comments
 
 For each unresolved comment:
 1. Address the requested change in code
 2. Stage and commit the fix
 3. Reply to the comment (or note resolution in the workpad)
 
-After addressing all feedback:
-```bash
-gh pr review <number> --request-review <reviewer>  # re-request if reviewer was dismissed
-```
+After addressing all feedback, re-request review using the `github` MCP `create_pull_request_review` tool with `event: "COMMENT"` and a message that all feedback has been addressed. If the platform exposes a `request_reviewers` tool, use that instead.
 
 If no PR exists yet, skip this step.
 
 ### 2.7 Open the PR
 
+Push the branch first:
 ```bash
-gh pr create \
-  --title "<IDENTIFIER>: <short imperative description>" \
-  --body "$(cat <<'EOF'
-## Summary
-
-<1-3 bullet points describing what changed and why>
-
-## Test Plan
-
-- [ ] <specific test or verification step>
-- [ ] All unit tests pass (`pnpm test`)
-- [ ] Lint and type checks pass
-
-Closes: <IDENTIFIER>
-EOF
-)"
+git push -u origin <branch-name>
 ```
+
+Then use the `github` MCP `create_pull_request` tool with these parameters:
+- `owner`: AprovanLabs
+- `repo`: core (or patchwork — whichever was checked out)
+- `title`: "<IDENTIFIER>: <short imperative description>"
+- `body`:
+  ```
+  ## Summary
+
+  <1-3 bullet points describing what changed and why>
+
+  ## Test Plan
+
+  - [ ] <specific test or verification step>
+  - [ ] All unit tests pass (`pnpm test`)
+  - [ ] Lint and type checks pass
+
+  Closes: <IDENTIFIER>
+  ```
+- `head`: <current-branch-name>
+- `base`: main
+
+The tool returns the PR URL — capture it for the next step.
 
 ### 2.8 Update State
 

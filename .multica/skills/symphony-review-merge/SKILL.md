@@ -18,11 +18,12 @@ This skill handles the review and merge lifecycle: responding to PR feedback and
 
 ### 3.0 Check Review Status
 
-Before acting, determine the current review state:
+Before acting, determine the current review state using the `github` MCP `get_pull_request` tool:
+- `owner`: AprovanLabs
+- `repo`: core (or patchwork — check the `pr_url` metadata to determine which)
+- `pull_number`: <number from pr_url metadata>
 
-```bash
-gh pr view <pr-number> --json reviews,reviewDecision
-```
+Check the `reviewDecision` field in the response.
 
 Branch on `reviewDecision`:
 
@@ -42,20 +43,14 @@ You are here when:
 
 ### 3.2 Read All Review Feedback
 
+Get the PR number from metadata:
 ```bash
-# Get PR number from metadata or workpad
-PR_URL=$(multica issue metadata list <issue-id> --output json | jq -r '.pr_url')
-PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-
-# Read comments and review feedback
-gh pr view "$PR_NUMBER" --comments
-gh pr reviews "$PR_NUMBER"
+multica issue metadata list <issue-id> --output json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('pr_url',''))"
 ```
 
-Also read inline code review comments:
-```bash
-gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/comments --jq '.[].body'
-```
+Then read all feedback using the `github` MCP tools:
+- `get_pull_request_reviews` (`owner: AprovanLabs`, `repo: <repo>`, `pull_number: <n>`) — review decisions and top-level review comments
+- `get_pull_request_comments` (`owner: AprovanLabs`, `repo: <repo>`, `pull_number: <n>`) — inline code review comments
 
 ### 3.3 Categorize Feedback
 
@@ -87,21 +82,21 @@ git push
 
 ### 3.5 Confirm CI
 
-After pushing review changes, confirm CI is still passing:
-```bash
-gh pr checks <number>
-```
+After pushing review changes, confirm CI is still passing using the `github` MCP `get_pull_request_status` tool:
+- `owner`: AprovanLabs
+- `repo`: <repo>
+- `pull_number`: <number>
 
-Wait for CI to complete before re-requesting review.
+Wait for all checks to show `success` before re-requesting review.
 
 ### 3.6 Re-Request Review
 
-Once all feedback is addressed and CI is green:
-
-```bash
-# Mark review as resolved and re-request
-gh pr review <number> --request-review <reviewer-username>
-```
+Once all feedback is addressed and CI is green, use the `github` MCP `create_pull_request_review` tool:
+- `owner`: AprovanLabs
+- `repo`: <repo>
+- `pull_number`: <number>
+- `event`: "COMMENT"
+- `body`: "All review feedback addressed. Ready for re-review."
 
 Update issue status:
 ```bash
@@ -147,18 +142,17 @@ git rebase origin/main
 git push --force-with-lease
 ```
 
-Then confirm CI passes on the rebased state before merging:
-```bash
-gh pr checks <number>
-# Wait for all checks to pass
-```
+Then confirm CI passes on the rebased state before merging using the `github` MCP `get_pull_request_status` tool (`owner: AprovanLabs`, `repo: <repo>`, `pull_number: <n>`). Wait for all checks to show `success`.
 
 ### 4.3 Merge
 
-Use squash merge to keep main history clean:
-```bash
-gh pr merge <number> --squash --delete-branch
-```
+Use squash merge to keep main history clean. Call the `github` MCP `merge_pull_request` tool:
+- `owner`: AprovanLabs
+- `repo`: core (or patchwork)
+- `pull_number`: <number>
+- `merge_method`: squash
+- `commit_title`: "<IDENTIFIER>: <PR title>" (optional — defaults to PR title)
+- `commit_message`: "<brief summary of all changes>" (optional)
 
 The squash commit message should summarize the entire PR, not just the last commit.
 
