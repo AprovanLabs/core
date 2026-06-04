@@ -8,7 +8,7 @@
     "opencode": {
       "id": "opencode",
       "display_name": "OpenCode",
-      "default_model": "minimax-m3-free"
+      "default_model": "synthetic/hf:zai-org/GLM-5.1"
     },
     "gemini": {
       "id": "gemini",
