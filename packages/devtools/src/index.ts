@@ -17,7 +17,6 @@ export {
 // Desloppify runner
 export {
   runDesloppifyScan,
-  createDesloppifyIssues,
   DEFAULT_EXCLUSIONS,
   formatExclusions,
   type ScanProfile,
@@ -25,6 +24,4 @@ export {
   type PackageResult,
   type ScanResult,
   type RunnerOptions,
-  type IssueCreatorOptions,
-  type IssueGroup,
 } from "./desloppify/index.js";

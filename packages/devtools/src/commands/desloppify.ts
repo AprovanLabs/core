@@ -44,20 +44,37 @@ function formatSummary(result: ScanResult): string {
   return lines.join("\n");
 }
 
-export function makeDesloppifyRunCommand(): Command {
-  return new Command("desloppify-run")
-    .description("Run desloppify scan with consistent config across repos and monorepo packages")
+export function makeDesloppifyCommand(): Command {
+  return new Command("desloppify")
+    .description(
+      "Run desloppify scan and output normalized JSON artifacts for downstream consumption",
+    )
     .requiredOption("--repo <path>", "Path to the repository root")
-    .option("--packages <paths...>", "Relative package paths within the monorepo (auto-detected if omitted)")
-    .option("--profile <profile>", "Scan profile: objective, full, or ci", "objective")
+    .option(
+      "--packages <paths...>",
+      "Relative package paths within the monorepo (auto-detected if omitted)",
+    )
+    .option(
+      "--profile <profile>",
+      "Scan profile: objective, full, or ci",
+      "objective",
+    )
     .option("--exclusions <patterns...>", "Additional exclusion patterns", [])
     .option("--output <path>", "Write normalized JSON output to file")
-    .option("--state-dir <path>", "Custom state directory (default: <repo>/.desloppify)")
-    .option("--no-auto-detect", "Disable monorepo package auto-detection")
+    .option(
+      "--state-dir <path>",
+      "Custom state directory (default: <repo>/.desloppify)",
+    )
+    .option(
+      "--no-auto-detect",
+      "Disable monorepo package auto-detection",
+    )
     .action((opts) => {
       const profile = opts.profile as ScanProfile;
       if (!["objective", "full", "ci"].includes(profile)) {
-        console.error(`Invalid profile: ${profile}. Must be objective, full, or ci.`);
+        console.error(
+          `Invalid profile: ${profile}. Must be objective, full, or ci.`,
+        );
         process.exit(1);
       }
 

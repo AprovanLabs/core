@@ -38,21 +38,3 @@ export interface RunnerOptions {
   output?: string;
   stateDir?: string;
 }
-
-export interface IssueCreatorOptions {
-  input: string;
-  repo: string;
-  parent?: string;
-  project?: string;
-  minTier?: number;
-  dryRun?: boolean;
-  groupBy?: "detector" | "file" | "package";
-}
-
-export interface IssueGroup {
-  title: string;
-  description: string;
-  tier: number;
-  detector: string;
-  findings: DesloppifyIssue[];
-}
