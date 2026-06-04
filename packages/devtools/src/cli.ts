@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { gitRefresh } from "./commands/git-refresh.js";
 import { bootstrap } from "./commands/bootstrap.js";
+import { gitRefresh } from "./commands/git-refresh.js";
 
 const program = new Command();
 
