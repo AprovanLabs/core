@@ -16,8 +16,8 @@ mcp:
   - filesystem
   - fetch
   - memory
-model: claude-sonnet-4-6
-runtime: claude
+model: synthetic/hf:zai-org/GLM-5.1
+runtime: opencode
 multica:
   visibility: workspace
   max_concurrent_tasks: 6
