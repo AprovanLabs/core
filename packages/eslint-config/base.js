@@ -18,9 +18,15 @@ module.exports = {
     ],
     "@typescript-eslint/consistent-type-imports": [
       "error",
-      { prefer: "type-imports", fixStyle: "inline-type-imports" },
+      {
+        prefer: "type-imports",
+        fixStyle: "inline-type-imports",
+        disallowTypeAnnotations: false,
+      },
     ],
     "no-unused-vars": "off",
+    "no-constant-condition": "warn",
+    "@typescript-eslint/no-empty-object-type": "warn",
     "import/no-duplicates": "error",
     "import/order": [
       "error",
