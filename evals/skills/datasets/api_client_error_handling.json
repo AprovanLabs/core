@@ -1,0 +1,47 @@
+[
+  {
+    "input": {
+      "task": "Write a Python API client for the state DNR (Department of Natural Resources) fishing API. The base URL is https://api.dnr.state.mn.us/v1. Implement functions: get_lake_data(lake_id), get_fishing_reports(lake_id), and get_species_survey(lake_id). Each should return the parsed JSON response.",
+      "context": "This client will be used in a Streamlit app. The DNR API is known to be slow and sometimes returns non-JSON error pages."
+    },
+    "expected": {
+      "has_timeout": true,
+      "has_try_except": true,
+      "catches_connection_error": true,
+      "catches_timeout_error": true,
+      "catches_json_decode_error": true,
+      "has_graceful_degradation": true,
+      "has_retry_or_informative_errors": true
+    }
+  },
+  {
+    "input": {
+      "task": "Write a Python API client for the OpenWeatherMap API. The base URL is https://api.openweathermap.org/data/2.5. Implement functions: get_current_weather(city), get_forecast(city, days=5), and get_weather_alerts(lat, lon). Each should return the parsed JSON response.",
+      "context": "This client will be used in a production web application. The API sometimes rate-limits requests and returns HTML error pages instead of JSON."
+    },
+    "expected": {
+      "has_timeout": true,
+      "has_try_except": true,
+      "catches_connection_error": true,
+      "catches_timeout_error": true,
+      "catches_json_decode_error": true,
+      "has_graceful_degradation": true,
+      "has_retry_or_informative_errors": true
+    }
+  },
+  {
+    "input": {
+      "task": "Write a Python API client for the USGS Water Services API. The base URL is https://waterservices.usgs.gov/nwis. Implement functions: get_streamflow(site_id), get_water_level(site_id), and get_site_info(site_id). Each should return the parsed JSON response.",
+      "context": "This client will be used in a data pipeline that runs on a schedule. The USGS API occasionally has downtime and returns empty or malformed responses."
+    },
+    "expected": {
+      "has_timeout": true,
+      "has_try_except": true,
+      "catches_connection_error": true,
+      "catches_timeout_error": true,
+      "catches_json_decode_error": true,
+      "has_graceful_degradation": true,
+      "has_retry_or_informative_errors": true
+    }
+  }
+]
