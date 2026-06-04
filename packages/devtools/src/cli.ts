@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 import { bootstrap } from "./commands/bootstrap.js";
+import { makeDesloppifyCommand } from "./commands/desloppify.js";
 import { gitRefresh } from "./commands/git-refresh.js";
 
 const program = new Command();
@@ -20,5 +21,7 @@ program
   .command("bootstrap")
   .description("Set up a repo with Cicadas, agent context, and symlinks")
   .action(bootstrap);
+
+program.addCommand(makeDesloppifyCommand());
 
 program.parse();
