@@ -10,6 +10,9 @@
       "path": "../patchwork",
     },
     {
+      "path": "../registry",
+    },
+    {
       "path": "../stitchery",
     },
     {
