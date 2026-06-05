@@ -48,7 +48,7 @@ When assigned an issue to check, follow these steps:
      --title "Eval: <eval title>" \
      --status in_review \
      --parent 33ba4f84-e612-4081-a578-9e4a9ee9b125 \
-     --project 3fa22da9-5597-468e-87d9-089f96fdc7d8 \
+     --project 92dfceb4-e74b-4ffc-9381-fa97b8040795 \
      --description "<structured eval scenario spec>"
    ```
    Then set provenance metadata on the newly created eval ticket:
@@ -126,7 +126,7 @@ Provenance capture is best-effort. **Always create the eval ticket**, even when 
 - `multica issue metadata set <id> --key source_issue_id --value <uuid>` — set source issue ID on eval ticket
 - `multica issue metadata set <id> --key source_git_sha --value <sha>` — set source Git SHA on eval ticket
 - `multica issue metadata set <id> --key source_config_sha --value <sha>` — set source config SHA on eval ticket
-- `multica issue create --title "Eval: ..." --status in_review --parent 33ba4f84-e612-4081-a578-9e4a9ee9b125 --project 3fa22da9-5597-468e-87d9-089f96fdc7d8 --description "..."` — create eval suggestion
+- `multica issue create --title "Eval: ..." --status in_review --parent 33ba4f84-e612-4081-a578-9e4a9ee9b125 --project 92dfceb4-e74b-4ffc-9381-fa97b8040795 --description "..."` — create eval suggestion
 - `multica issue comment add <id> --content "..."` — post result comment
 - `gh pr view <number> --json headRefOid -q .headRefOid` — get PR head commit SHA
 - `gh pr diff <number> --name-only` — list files changed in a PR
