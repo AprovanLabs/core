@@ -1,0 +1,38 @@
+[
+  {
+    "input": {
+      "task": "I have completed research for building a customer-facing web application for an e-commerce platform. The research found we need: a React frontend with product catalog, cart, and checkout pages; a Node.js/Express backend with REST APIs for products, orders, and payments; a PostgreSQL database schema for products, users, orders, and payments; and Stripe integration for payment processing. Now create an implementation plan.",
+      "context": "This is a greenfield project. The team has frontend and backend engineers available. The PM has approved the architecture. Each subtask should be assignable to a single engineer and independently testable."
+    },
+    "expected": {
+      "has_multiple_subtasks": true,
+      "has_scope_per_subtask": true,
+      "has_dependencies": true,
+      "no_monolithic_task": true
+    }
+  },
+  {
+    "input": {
+      "task": "Research is complete for a real-time data pipeline that ingests IoT sensor data, transforms it, stores it in a time-series database, and exposes it via a query API. The research identified: a Kafka-based ingestion layer, a Flink stream processor for transformations, a TimescaleDB storage layer, and a FastAPI query service. Produce an implementation breakdown.",
+      "context": "The data engineering team has specialists in streaming, databases, and API development. The architecture has been reviewed and approved. Work should be parallelizable where possible with clear dependency ordering."
+    },
+    "expected": {
+      "has_multiple_subtasks": true,
+      "has_scope_per_subtask": true,
+      "has_dependencies": true,
+      "no_monolithic_task": true
+    }
+  },
+  {
+    "input": {
+      "task": "We have finalized the design for a mobile fitness tracking app. The design includes: user authentication with OAuth2, a React Native UI with workout logging, nutrition tracking, and progress dashboards, a Python backend API for data aggregation, and integration with Apple HealthKit and Google Fit. Create the implementation plan as subtasks.",
+      "context": "There are mobile, backend, and DevOps engineers on the team. The UX design is finalized. We need to track each piece of work separately so progress is visible. Dependencies between components should be explicit."
+    },
+    "expected": {
+      "has_multiple_subtasks": true,
+      "has_scope_per_subtask": true,
+      "has_dependencies": true,
+      "no_monolithic_task": true
+    }
+  }
+]
