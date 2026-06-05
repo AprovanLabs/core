@@ -1,17 +1,19 @@
-name: Publish Packages to NPM
+name: Release
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 env:
   HUSKY: 0
 
 jobs:
-  publish:
-    name: Publish
+  release:
+    name: Release
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +33,13 @@ jobs:
       - name: Build packages
         run: pnpm run build
 
-      - name: Publish packages
-        run: pnpm -r publish --no-git-checks --access public
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm -r publish --access public
+          title: "chore: version packages"
+          commit: "chore: version packages"
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
