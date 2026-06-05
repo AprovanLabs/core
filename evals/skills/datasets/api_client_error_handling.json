@@ -1,8 +1,8 @@
 [
   {
     "input": {
-      "task": "Write a Python API client for the state DNR (Department of Natural Resources) fishing API. The base URL is https://api.dnr.state.mn.us/v1. Implement functions: get_lake_data(lake_id), get_fishing_reports(lake_id), and get_species_survey(lake_id). Each should return the parsed JSON response.",
-      "context": "This client will be used in a Streamlit app. The DNR API is known to be slow and sometimes returns non-JSON error pages."
+      "task": "Write a Python API client for the state DNR (Department of Natural Resources) fishing API. The base URL is https://api.dnr.state.mn.us/v1. Implement functions: get_lake_data(lake_id), get_fishing_reports(lake_id), and get_species_survey(lake_id). Each should return the parsed JSON response. Prefer using a shared, generic HTTP request handler rather than duplicating request logic across each method.",
+      "context": "This client will be used in a Streamlit app. The DNR API is known to be slow and sometimes returns non-JSON error pages. The codebase favors shared utility functions for common patterns like HTTP calls."
     },
     "expected": {
       "has_timeout": true,
@@ -11,13 +11,14 @@
       "catches_timeout_error": true,
       "catches_json_decode_error": true,
       "has_graceful_degradation": true,
-      "has_retry_or_informative_errors": true
+      "has_retry_or_informative_errors": true,
+      "uses_shared_handler": true
     }
   },
   {
     "input": {
-      "task": "Write a Python API client for the OpenWeatherMap API. The base URL is https://api.openweathermap.org/data/2.5. Implement functions: get_current_weather(city), get_forecast(city, days=5), and get_weather_alerts(lat, lon). Each should return the parsed JSON response.",
-      "context": "This client will be used in a production web application. The API sometimes rate-limits requests and returns HTML error pages instead of JSON."
+      "task": "Write a Python API client for the OpenWeatherMap API. The base URL is https://api.openweathermap.org/data/2.5. Implement functions: get_current_weather(city), get_forecast(city, days=5), and get_weather_alerts(lat, lon). Each should return the parsed JSON response. Use a shared internal method for all HTTP requests so error handling is centralized rather than repeated.",
+      "context": "This client will be used in a production web application. The API sometimes rate-limits requests and returns HTML error pages instead of JSON. The team prefers standardized HTTP handler patterns."
     },
     "expected": {
       "has_timeout": true,
@@ -26,13 +27,14 @@
       "catches_timeout_error": true,
       "catches_json_decode_error": true,
       "has_graceful_degradation": true,
-      "has_retry_or_informative_errors": true
+      "has_retry_or_informative_errors": true,
+      "uses_shared_handler": true
     }
   },
   {
     "input": {
-      "task": "Write a Python API client for the USGS Water Services API. The base URL is https://waterservices.usgs.gov/nwis. Implement functions: get_streamflow(site_id), get_water_level(site_id), and get_site_info(site_id). Each should return the parsed JSON response.",
-      "context": "This client will be used in a data pipeline that runs on a schedule. The USGS API occasionally has downtime and returns empty or malformed responses."
+      "task": "Write a Python API client for the USGS Water Services API. The base URL is https://waterservices.usgs.gov/nwis. Implement functions: get_streamflow(site_id), get_water_level(site_id), and get_site_info(site_id). Each should return the parsed JSON response. Implement a common _request helper to avoid duplicating HTTP and error-handling logic across methods.",
+      "context": "This client will be used in a data pipeline that runs on a schedule. The USGS API occasionally has downtime and returns empty or malformed responses. Existing codebase conventions use shared handler functions for HTTP calls."
     },
     "expected": {
       "has_timeout": true,
@@ -41,7 +43,24 @@
       "catches_timeout_error": true,
       "catches_json_decode_error": true,
       "has_graceful_degradation": true,
-      "has_retry_or_informative_errors": true
+      "has_retry_or_informative_errors": true,
+      "uses_shared_handler": true
+    }
+  },
+  {
+    "input": {
+      "task": "Write a Python API client class for a REST API at https://api.example.com/v2. It needs methods: list_items(), get_item(item_id), create_item(data), and update_item(item_id, data). Use a single shared method for making HTTP requests so that timeout, retry, and error handling logic lives in one place.",
+      "context": "This is a new project with no existing HTTP utilities. Create a generic shared request handler within the client class. The team convention is to centralize HTTP concerns in a single private method."
+    },
+    "expected": {
+      "has_timeout": true,
+      "has_try_except": true,
+      "catches_connection_error": true,
+      "catches_timeout_error": true,
+      "catches_json_decode_error": true,
+      "has_graceful_degradation": true,
+      "has_retry_or_informative_errors": true,
+      "uses_shared_handler": true
     }
   }
 ]
