@@ -17,3 +17,24 @@
 </h3>
 
 <br>
+
+## Development
+
+### Pre-commit hooks
+
+This repo uses [pre-commit](https://pre-commit.com/) to run checks before each commit. Install and set up:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Hooks included:
+
+- **gitleaks** — scans for hardcoded secrets (API keys, tokens, passwords). Uses [`.gitleaks.toml`](.gitleaks.toml) for repo-specific rules and allowlists.
+
+To run all hooks manually:
+
+```bash
+pre-commit run --all-files
+```
