@@ -73,6 +73,10 @@ Create a shared base tsconfig at `packages/tsconfig/base.json` (or a dedicated `
 - **Onboarding friction:** New package authors must copy-paste options and may accidentally omit `strict: true` or `skipLibCheck`.
 - **Inconsistent builds:** If one package lacks `declaration: true`, its types won't be available to dependents within the monorepo.
 
+## Scanner Enforcement
+
+**Scanner enforcement:** Not yet implemented — candidate for rule `tsconfig-extends-base`.
+
 ## References
 
 - [TypeScript Project References](https://www.typescriptlang.org/docs/handbook/project-references.html)
