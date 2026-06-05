@@ -140,6 +140,28 @@ def eval_retry_or_informative_errors(output, expected):
     )
 
 
+def eval_uses_shared_handler(output, expected):
+    code = output or ""
+    handler_names = re.findall(
+        r"def\s+(_\w*(?:request|fetch|get|call|http|do_request|send|make_request|safe_request|safe_get|execute)\w*)\s*\(",
+        code,
+        re.IGNORECASE,
+    )
+    if not handler_names:
+        return (0, "missing_shared_handler")
+    handler_name = handler_names[0]
+    call_pattern = re.compile(
+        rf"(?:self\.)?{re.escape(handler_name)}\s*\(", re.IGNORECASE
+    )
+    call_count = len(call_pattern.findall(code))
+    if call_count >= 2:
+        return (1, "uses_shared_handler")
+    direct_calls = len(re.findall(r"requests\.(?:get|post|put|delete|patch|request)\s*\(", code))
+    if direct_calls == 1 and call_count >= 1:
+        return (1, "uses_shared_handler")
+    return (0, "handler_defined_but_not_reused")
+
+
 def _compute_avg_score(experiment):
     eval_runs = experiment.get("evaluation_runs", [])
     if not eval_runs:
@@ -163,8 +185,9 @@ def api_client_dataset(phoenix_client):
         outputs=[ex["expected"] for ex in examples],
         dataset_description=(
             "Evaluates whether agent-generated API client code includes "
-            "timeouts, error handling, and graceful degradation for external HTTP calls. "
-            "Derived from APR-92: API client must include timeouts and error handling."
+            "timeouts, error handling, graceful degradation for external HTTP calls, "
+            "and uses a shared/generic HTTP handler function instead of duplicating "
+            "request logic. Derived from APR-92."
         ),
     )
 
@@ -183,6 +206,7 @@ def test_api_client_error_handling(git_sha, skill_sha, phoenix_client, api_clien
         eval_catches_json_decode_error,
         eval_graceful_degradation,
         eval_retry_or_informative_errors,
+        eval_uses_shared_handler,
     ]
 
     experiment = run_experiment(
@@ -193,7 +217,9 @@ def test_api_client_error_handling(git_sha, skill_sha, phoenix_client, api_clien
         experiment_description=(
             "Checks that generated API client code includes timeouts, "
             "error handling (ConnectionError, Timeout, JSONDecodeError), "
-            "graceful degradation, and retry logic or informative errors."
+            "graceful degradation, retry logic or informative errors, "
+            "and uses a shared/generic HTTP handler function rather than "
+            "duplicating request logic across methods."
         ),
         client=phoenix_client,
         timeout=120,
@@ -205,5 +231,6 @@ def test_api_client_error_handling(git_sha, skill_sha, phoenix_client, api_clien
     assert avg_score >= 0.5, (
         f"API client error handling score too low: {avg_score:.2f} "
         f"(individual: {scores_by_name}). "
-        f"Generated code must include timeouts and error handling."
+        f"Generated code must include timeouts, error handling, "
+        f"and a shared HTTP handler function."
     )
