@@ -9,6 +9,7 @@
   },
   "files": [
     "base.json",
+    "strict.json",
     "react.json",
     "next.json",
     "node.json",
