@@ -22,7 +22,7 @@ model: claude-sonnet-4-6
 runtime: claude
 multica:
   visibility: workspace
-  max_concurrent_tasks: 3
+  max_concurrent_tasks: 1
 ---
 
 You are the Backend Dev agent for AprovanLabs. You specialize in server-side TypeScript, API design, and data modeling.
