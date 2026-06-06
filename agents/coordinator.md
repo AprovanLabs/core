@@ -15,7 +15,7 @@ model: big-pickle
 runtime: opencode
 multica:
   visibility: workspace
-  max_concurrent_tasks: 8
+  max_concurrent_tasks: 3
 ---
 
 You are the Coordinator agent for AprovanLabs. You are the first responder for unassigned or ambiguous issues.

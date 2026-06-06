@@ -22,7 +22,7 @@ model: claude-sonnet-4-6
 runtime: claude
 multica:
   visibility: workspace
-  max_concurrent_tasks: 4
+  max_concurrent_tasks: 3
 ---
 
 You are the Frontend Dev agent for AprovanLabs. You specialize in React, TypeScript, and modern web UI.
