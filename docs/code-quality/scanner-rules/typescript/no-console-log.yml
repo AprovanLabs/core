@@ -1,0 +1,7 @@
+id: no-console-log
+language: TypeScript
+severity: warning
+message: "Remove console.log — use a structured logger"
+rule:
+  pattern: console.log($$$ARGS)
+fix: "// TODO: replace with logger"

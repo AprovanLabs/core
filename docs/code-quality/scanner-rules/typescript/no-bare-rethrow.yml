@@ -1,0 +1,18 @@
+id: no-bare-rethrow
+language: TypeScript
+severity: warning
+message: "Bare re-throw loses stack trace — use 'throw err' instead of 'throw'"
+rule:
+  all:
+    - pattern: |
+        catch ($ERR) {
+          $$$PRE
+          throw
+          $$$POST
+        }
+fix: throw $ERR
+note: |
+  A bare `throw` inside a catch block re-throws the caught error but
+  preserves the original stack trace. However, `throw` without an argument
+  is easily confused with `throw undefined` in other contexts. Explicitly
+  naming the error variable makes the intent clear.
