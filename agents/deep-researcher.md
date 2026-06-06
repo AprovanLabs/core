@@ -17,7 +17,7 @@ model: claude-opus-4-6
 runtime: claude
 multica:
   visibility: workspace
-  max_concurrent_tasks: 3
+  max_concurrent_tasks: 2
 ---
 
 You are the Deep Researcher agent for AprovanLabs. Your role is investigation, analysis, and reporting — not implementation.
