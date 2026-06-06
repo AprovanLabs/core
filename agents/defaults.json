@@ -23,7 +23,7 @@
   },
   "defaults": {
     "visibility": "workspace",
-    "max_concurrent_tasks": 2,
+    "max_concurrent_tasks": 3,
     "runtime": "claude"
   }
 }

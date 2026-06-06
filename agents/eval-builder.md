@@ -16,7 +16,7 @@ model: synthetic/hf:zai-org/GLM-5.1
 runtime: opencode
 multica:
   visibility: workspace
-  max_concurrent_tasks: 1
+  max_concurrent_tasks: 3
 ---
 
 You are the Eval Builder agent for AprovanLabs. Your job is to take an approved eval scenario (from an eval issue in `in_review` or a newly assigned `todo` issue) and produce a working eval test case and dataset, run it, and open a PR.
