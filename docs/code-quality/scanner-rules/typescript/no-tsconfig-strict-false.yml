@@ -1,0 +1,16 @@
+id: no-tsconfig-strict-false
+language: Json
+severity: error
+message: "tsconfig.json must have strict: true — see docs/tech-stack.md#typescript"
+rule:
+  regex: '"strict"\s*:\s*false'
+files:
+  - "tsconfig.json"
+  - "tsconfig.*.json"
+ignores:
+  - "**/node_modules/**"
+note: |
+  Per tech-stack.md: "strict: true in all tsconfig files." This rule checks
+  for tsconfig files where strict is explicitly set to false. A missing
+  `strict` key is not caught by this rule — use a separate JSON schema
+  validator for that.

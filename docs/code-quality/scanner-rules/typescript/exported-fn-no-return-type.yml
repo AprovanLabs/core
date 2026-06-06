@@ -1,0 +1,22 @@
+id: exported-fn-no-return-type
+language: TypeScript
+severity: info
+message: "Exported function lacks an explicit return type"
+rule:
+  all:
+    - pattern: |
+        export function $FN($$$PARAMS) {
+          $$$BODY
+        }
+    - not:
+        has:
+          pattern: $FN
+          stopBy: neighbor
+constraints:
+  FN:
+    regex: "^[a-zA-Z_]"
+note: |
+  Per tech-stack.md: "Prefer explicit return types on exported functions."
+  This rule catches exported functions where the return type annotation is
+  absent. Adding return types improves API documentation and catches
+  unintentional type widening.

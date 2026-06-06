@@ -1,0 +1,15 @@
+id: no-empty-catch
+language: TypeScript
+severity: warning
+message: "Empty catch block — handle the error or re-throw"
+rule:
+  all:
+    - pattern: catch ($ERR) {$$$BODY}
+    - not:
+        has:
+          pattern: $$$BODY
+note: |
+  Empty catch blocks silently swallow errors. Either:
+  1. Log the error: `catch (err) { logger.error("...", err) }`
+  2. Re-throw: `catch (err) { throw err }`
+  3. Add a comment explaining why it's intentionally empty

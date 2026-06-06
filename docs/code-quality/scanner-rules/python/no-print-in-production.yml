@@ -1,0 +1,14 @@
+id: no-print-in-production
+language: Python
+severity: warning
+message: "Remove print() in production code — use logging module"
+rule:
+  pattern: print($$$ARGS)
+ignores:
+  - "**/scripts/**"
+  - "**/notebooks/**"
+  - "**/__main__.py"
+note: |
+  print() statements in production code should be replaced with the logging
+  module for structured, configurable output. Excluded for scripts, notebooks,
+  and __main__.py where print is expected.

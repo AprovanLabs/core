@@ -1,0 +1,13 @@
+id: no-bare-except
+language: Python
+severity: warning
+message: "Bare except catches all exceptions including SystemExit and KeyboardInterrupt — catch specific exceptions"
+rule:
+  pattern: |
+    except:
+      $$$BODY
+fix: "except Exception:"
+note: |
+  A bare `except:` catches everything including SystemExit and
+  KeyboardInterrupt, making it impossible to interrupt the program.
+  Use `except Exception:` at minimum, or catch specific exception types.
