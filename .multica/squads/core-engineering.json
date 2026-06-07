@@ -6,6 +6,7 @@
     {"ref": "engineer", "role": "member"},
     {"ref": "frontend-dev", "role": "member"},
     {"ref": "backend-dev", "role": "member"},
-    {"ref": "deep-researcher", "role": "member"}
+    {"ref": "deep-researcher", "role": "member"},
+    {"ref": "code-quality-sentinel", "role": "member"}
   ]
 }
