@@ -11,6 +11,7 @@ Documented anti-patterns with file references and fix examples.
 | Article | Severity | Affected Files | Added |
 |---------|----------|---------------|-------|
 | [Duplicated tsconfig without shared base](anti-patterns/duplicated-tsconfig.md) | Medium | `packages/devtools/tsconfig.json` | 2026-06-04 |
+| [Unguarded JSON.parse without error handling](anti-patterns/unguarded-json-parse.md) | High | 4 repos (core, registry, patchwork, zolvery) | 2026-06-07 |
 
 ### Best Practices
 
@@ -19,6 +20,14 @@ Guides with code snippets showing recommended patterns.
 | Article | Severity | Affected Files | Added |
 |---------|----------|---------------|-------|
 | *(none yet)* | | | |
+
+### Best Practices
+
+Guides with code snippets showing recommended patterns.
+
+| Article | Severity | Affected Files | Added |
+|---------|----------|---------------|-------|
+| [Test infrastructure before test coverage](best-practices/test-infrastructure.md) | Critical | All 5 repos | 2026-06-07 |
 
 ### Shared Config Guides
 
