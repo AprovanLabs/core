@@ -12,4 +12,4 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["agents", "skills"]
+testpaths = ["agents", "skills", "scoring_bank"]
