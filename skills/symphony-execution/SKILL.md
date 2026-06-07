@@ -24,14 +24,27 @@ If the code is not yet checked out, fetch it first:
 multica repo checkout <url>   # URL from project resources (.multica/project/resources.json)
 ```
 
-Then create a feature branch:
+### 1.1 Create Feature Branch (Required)
 
-```bash
-git checkout -b <issue-identifier>/<short-slug>
-# e.g. git checkout -b APR-47/symphony-execution-skill
+**Branch naming is mandatory.** Every implementation branch must follow this format:
+
+```
+<IDENTIFIER>/<short-slug>
 ```
 
-If the branch already exists from a prior run, switch to it and rebase:
+- `<IDENTIFIER>`: the issue key from the platform (e.g., `APR-47`, `MUL-123`)
+- `<short-slug>`: a 2–5 word kebab-case description of the work (e.g., `fix-login`, `add-email-validation`)
+
+**Examples:**
+```bash
+git checkout -b APR-47/symphony-execution-skill
+git checkout -b APR-184/branch-naming-standard
+git checkout -b MUL-99/fix-null-deref-auth
+```
+
+**Pattern:** `^[A-Z]+-\d+/<short-slug>` — the `ci-validation` skill enforces this before any PR is opened.
+
+**If the branch already exists from a prior run**, switch to it and rebase:
 
 ```bash
 git checkout <branch>
@@ -39,7 +52,9 @@ git fetch origin
 git rebase origin/main
 ```
 
-### 1.1 Create the Workpad
+**Never work on the default agent branch.** Working directly on `main` or the platform-provided checkout branch is not allowed — always create a named feature branch first.
+
+### 1.2 Create the Workpad
 
 Post a workpad comment immediately. Don't wait until the plan is fully formed:
 
@@ -58,27 +73,27 @@ multica issue comment add <issue-id> --content "## Agent Workpad
 "
 ```
 
-### 1.2 Read and Understand the Issue
+### 1.3 Read and Understand the Issue
 
 - Read the full description including acceptance criteria
 - Read all prior comments (context may be in comments, not the description)
 - Identify: what needs to be built, what success looks like, what the constraints are
 
-### 1.3 Reconcile Prior Work
+### 1.4 Reconcile Prior Work
 
 Before writing any new code:
 1. Check for existing branches: `git branch -a | grep <issue-identifier-slug>`
 2. Check for any stale PRs: use the `github` MCP `list_pull_requests` tool (`owner: AprovanLabs`, `repo: <repo>`, `state: all`) or `search_issues` with query `<identifier> is:pr`. Also check the `pr_url` metadata key.
 3. If prior work exists: check it out, evaluate what's done vs. what's needed
 
-### 1.4 Explore the Codebase
+### 1.5 Explore the Codebase
 
 - Find the files you'll need to modify: read them before touching them
 - Understand the patterns used by adjacent code
 - Check existing tests to understand expected behavior
 - Identify any shared utilities or types you should reuse
 
-### 1.5 Build the Plan
+### 1.6 Build the Plan
 
 Update the workpad with a hierarchical implementation plan:
 
@@ -100,16 +115,17 @@ For **bug fixes**, add a reproduction step before the fix:
 - [ ] Reproduce: write a failing test that captures the bug
 - [ ] Fix: implement the minimal change that makes the test pass
 
-### 1.6 Sync Branch
+### 1.7 Sync Branch
 
 ```bash
 git fetch origin
 git rebase origin/main
 ```
 
-If on the default agent branch and rebase would be complex, create a feature branch:
+If you have not yet created a feature branch, do so now — **do not continue on the default checkout branch**:
 ```bash
-git checkout -b feat/<issue-slug>
+git checkout -b <IDENTIFIER>/<short-slug>
+# e.g. git checkout -b APR-47/fix-login
 ```
 
 **Exit Phase 1**: Workpad updated with complete plan → proceed to Phase 2.
