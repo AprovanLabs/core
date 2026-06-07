@@ -63,17 +63,23 @@ def _make_parser() -> argparse.ArgumentParser:
     rec.add_argument("--reassigned", action="store_true", default=False)
     rec.add_argument("--human-review-score", type=float, default=None)
     rec.add_argument("--notes", default="")
+    # Usage tracking
+    rec.add_argument("--provider", default=None, help="Provider/route, e.g. openrouter, anthropic-direct")
+    rec.add_argument("--tokens-in", type=int, default=None, dest="tokens_input", metavar="N", help="Input token count")
+    rec.add_argument("--tokens-out", type=int, default=None, dest="tokens_output", metavar="N", help="Output token count")
+    rec.add_argument("--cost-usd", type=float, default=None, dest="cost_usd", metavar="COST", help="Actual cost in USD")
 
     # query
     qry = sub.add_parser("query", help="Query entries from the scoring bank")
     qry.add_argument("--model-id", default=None)
+    qry.add_argument("--provider", default=None, help="Filter by provider, e.g. openrouter")
     qry.add_argument("--min-complexity", type=int, default=None)
     qry.add_argument("--max-complexity", type=int, default=None)
     qry.add_argument("--success-only", action="store_true", default=False)
 
     # aggregate
     agg = sub.add_parser("aggregate", help="Show aggregated statistics")
-    agg.add_argument("--by", choices=["model", "complexity"], required=True)
+    agg.add_argument("--by", choices=["model", "complexity", "provider"], required=True)
 
     # model-quality (for selection engine integration)
     mq = sub.add_parser(
@@ -106,6 +112,10 @@ def main(argv: Optional[list[str]] = None) -> int:
             was_reassigned=args.reassigned,
             human_review_score=args.human_review_score,
             eval_notes=args.notes,
+            provider=args.provider,
+            tokens_input=args.tokens_input,
+            tokens_output=args.tokens_output,
+            cost_usd=args.cost_usd,
         )
         bank.record(entry)
         print(f"Recorded score for {args.task_identifier} ({args.model_id})")
@@ -113,6 +123,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     elif args.command == "query":
         entries = bank.query(
             model_id=args.model_id,
+            provider=args.provider,
             min_complexity=args.min_complexity,
             max_complexity=args.max_complexity,
             task_success=True if args.success_only else None,
@@ -129,10 +140,14 @@ def main(argv: Optional[list[str]] = None) -> int:
                     "avg_complexity_score": round(v.avg_complexity_score, 3),
                     "success_rate": round(v.success_rate, 3),
                     "avg_revision_cycles": round(v.avg_revision_cycles, 3),
+                    "total_cost_usd": round(v.total_cost_usd, 6),
+                    "avg_cost_usd": round(v.avg_cost_usd, 6),
+                    "total_tokens_input": v.total_tokens_input,
+                    "total_tokens_output": v.total_tokens_output,
                 }
                 for k, v in stats.items()
             }
-        else:
+        elif args.by == "complexity":
             stats = bank.aggregate_by_complexity()
             out = {
                 str(k): {
@@ -141,8 +156,23 @@ def main(argv: Optional[list[str]] = None) -> int:
                     "success_rate": round(v.success_rate, 3),
                     "avg_revision_cycles": round(v.avg_revision_cycles, 3),
                     "top_model": v.top_model,
+                    "total_cost_usd": round(v.total_cost_usd, 6),
+                    "avg_cost_usd": round(v.avg_cost_usd, 6),
                 }
                 for k, v in sorted(stats.items())
+            }
+        else:  # provider
+            stats = bank.aggregate_by_provider()
+            out = {
+                k: {
+                    "entry_count": v.entry_count,
+                    "total_cost_usd": round(v.total_cost_usd, 6),
+                    "avg_cost_usd": round(v.avg_cost_usd, 6),
+                    "total_tokens_input": v.total_tokens_input,
+                    "total_tokens_output": v.total_tokens_output,
+                    "success_rate": round(v.success_rate, 3),
+                }
+                for k, v in stats.items()
             }
         print(json.dumps(out, indent=2))
 

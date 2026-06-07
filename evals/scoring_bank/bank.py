@@ -47,6 +47,11 @@ class ModelStats:
     avg_complexity_score: float
     success_rate: float
     avg_revision_cycles: float
+    # Cost / usage — only entries with cost_usd populated contribute
+    total_cost_usd: float = 0.0
+    avg_cost_usd: float = 0.0
+    total_tokens_input: int = 0
+    total_tokens_output: int = 0
 
 
 @dataclass
@@ -58,6 +63,20 @@ class ComplexityStats:
     avg_revision_cycles: float
     # Most common model used at this complexity tier
     top_model: Optional[str]
+    # Cost / usage — only entries with cost_usd populated contribute
+    total_cost_usd: float = 0.0
+    avg_cost_usd: float = 0.0
+
+
+@dataclass
+class ProviderStats:
+    provider: str
+    entry_count: int
+    total_cost_usd: float
+    avg_cost_usd: float
+    total_tokens_input: int
+    total_tokens_output: int
+    success_rate: float
 
 
 class ScoringBank:
@@ -98,6 +117,7 @@ class ScoringBank:
         self,
         *,
         model_id: Optional[str] = None,
+        provider: Optional[str] = None,
         min_complexity: Optional[int] = None,
         max_complexity: Optional[int] = None,
         task_success: Optional[bool] = None,
@@ -107,6 +127,8 @@ class ScoringBank:
         results = self.load_all()
         if model_id is not None:
             results = [e for e in results if e.model_id == model_id]
+        if provider is not None:
+            results = [e for e in results if e.provider == provider]
         if min_complexity is not None:
             results = [e for e in results if e.complexity_score >= min_complexity]
         if max_complexity is not None:
@@ -130,6 +152,8 @@ class ScoringBank:
         stats: dict[str, ModelStats] = {}
         for model_id, entries in buckets.items():
             count = len(entries)
+            costed = [e for e in entries if e.cost_usd is not None]
+            total_cost = sum(e.cost_usd for e in costed)  # type: ignore[misc]
             stats[model_id] = ModelStats(
                 model_id=model_id,
                 entry_count=count,
@@ -137,6 +161,10 @@ class ScoringBank:
                 avg_complexity_score=sum(e.complexity_score for e in entries) / count,
                 success_rate=sum(1 for e in entries if e.task_success) / count,
                 avg_revision_cycles=sum(e.revision_cycles for e in entries) / count,
+                total_cost_usd=total_cost,
+                avg_cost_usd=total_cost / len(costed) if costed else 0.0,
+                total_tokens_input=sum(e.tokens_input or 0 for e in entries),
+                total_tokens_output=sum(e.tokens_output or 0 for e in entries),
             )
         return stats
 
@@ -153,6 +181,8 @@ class ScoringBank:
             for e in entries:
                 model_counts[e.model_id] = model_counts.get(e.model_id, 0) + 1
             top_model = max(model_counts, key=lambda m: model_counts[m]) if model_counts else None
+            costed = [e for e in entries if e.cost_usd is not None]
+            total_cost = sum(e.cost_usd for e in costed)  # type: ignore[misc]
             stats[complexity] = ComplexityStats(
                 complexity_score=complexity,
                 entry_count=count,
@@ -160,6 +190,34 @@ class ScoringBank:
                 success_rate=sum(1 for e in entries if e.task_success) / count,
                 avg_revision_cycles=sum(e.revision_cycles for e in entries) / count,
                 top_model=top_model,
+                total_cost_usd=total_cost,
+                avg_cost_usd=total_cost / len(costed) if costed else 0.0,
+            )
+        return stats
+
+    def aggregate_by_provider(self) -> dict[str, ProviderStats]:
+        """Return per-provider cost and usage statistics across all entries.
+
+        Only entries with a non-None ``provider`` field are included.
+        Cost and token fields default to 0 when not populated on individual entries.
+        """
+        buckets: dict[str, list[ScoringEntry]] = {}
+        for entry in self.load_all():
+            if entry.provider is not None:
+                buckets.setdefault(entry.provider, []).append(entry)
+
+        stats: dict[str, ProviderStats] = {}
+        for provider, entries in buckets.items():
+            count = len(entries)
+            total_cost = sum(e.cost_usd or 0.0 for e in entries)
+            stats[provider] = ProviderStats(
+                provider=provider,
+                entry_count=count,
+                total_cost_usd=total_cost,
+                avg_cost_usd=total_cost / count,
+                total_tokens_input=sum(e.tokens_input or 0 for e in entries),
+                total_tokens_output=sum(e.tokens_output or 0 for e in entries),
+                success_rate=sum(1 for e in entries if e.task_success) / count,
             )
         return stats
 
