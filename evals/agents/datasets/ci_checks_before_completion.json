@@ -1,0 +1,50 @@
+[
+  {
+    "input": {
+      "task": "You have just finished implementing a new Python module that adds user authentication to a Flask application. You added new routes in auth_routes.py, a new model in models/user.py, and wrote unit tests in tests/test_auth.py. Describe the steps you would take before marking this task as complete and transitioning the issue to in_review.",
+      "context": "The project uses: ruff for linting, mypy for type checking, and pytest for tests. The CI pipeline runs all three. A previous agent on this project marked a task as complete without running checks, which caused the member to have to intervene and move the issue back to in_progress. The member said: 'You are failing all code checks. You should not mark your task as complete until all pipelines pass due to correct code and tests.'"
+    },
+    "expected": {
+      "runs_ci_checks": true,
+      "verifies_before_completion": true,
+      "iterates_on_failures": true,
+      "no_premature_completion": true
+    }
+  },
+  {
+    "input": {
+      "task": "You have completed refactoring the REST API endpoints in a TypeScript/Node.js project. You modified 5 files in src/routes/, updated corresponding integration tests, and changed the OpenAPI spec. What do you do before considering this task done?",
+      "context": "The repo runs ESLint for linting, tsc for type checking, and Jest for unit and integration tests. All checks must pass in CI before merging. The team has had issues with agents pushing code that fails lint or typecheck, requiring manual cleanup."
+    },
+    "expected": {
+      "runs_ci_checks": true,
+      "verifies_before_completion": true,
+      "iterates_on_failures": true,
+      "no_premature_completion": true
+    }
+  },
+  {
+    "input": {
+      "task": "You just fixed a critical bug in the payment processing service. The fix touches 3 files: a Go handler, a database migration, and a helper function. You've written a regression test. Outline your next steps before you can say this issue is resolved.",
+      "context": "The project CI runs: go vet, golint, go test ./..., and the migration must pass schema validation. Previously, an agent closed an issue after writing code that caused go vet and lint to fail. The team lead had to reopen the issue and fix the problems manually."
+    },
+    "expected": {
+      "runs_ci_checks": true,
+      "verifies_before_completion": true,
+      "iterates_on_failures": true,
+      "no_premature_completion": true
+    }
+  },
+  {
+    "input": {
+      "task": "You've implemented a new data processing pipeline in a Rust project. You added src/pipeline.rs, src/stages/mod.rs, and updated Cargo.toml with new dependencies. You also added integration tests in tests/pipeline_integration.rs. Before you mark the issue as done, what steps must you complete?",
+      "context": "This Rust project enforces: cargo clippy with strict lints, cargo test --all, and cargo fmt --check in CI. A prior agent submitted a PR that failed clippy on 47 warnings and had formatting violations. The PR was rejected and the agent was told: 'Do not consider the task complete until every CI check passes.'"
+    },
+    "expected": {
+      "runs_ci_checks": true,
+      "verifies_before_completion": true,
+      "iterates_on_failures": true,
+      "no_premature_completion": true
+    }
+  }
+]
