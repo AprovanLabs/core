@@ -39,9 +39,15 @@ function run(cmd: string, label: string): void {
   }
 }
 
-function parseStateFile(statePath: string): DesloppifyState {
+export function parseStateFile(statePath: string): DesloppifyState {
   const raw = readFileSync(statePath, "utf-8");
-  return JSON.parse(raw) as DesloppifyState;
+  try {
+    return JSON.parse(raw) as DesloppifyState;
+  } catch (err) {
+    throw new Error(
+      `Failed to parse desloppify state file at ${statePath}: ${String(err)}`,
+    );
+  }
 }
 
 function extractIssues(state: DesloppifyState): DesloppifyIssue[] {
