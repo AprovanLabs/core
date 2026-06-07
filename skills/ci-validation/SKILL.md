@@ -49,6 +49,27 @@ pnpm --filter <package-name> build
 
 Run all applicable checks before creating or updating a PR. **All must pass.**
 
+### 1.0 Branch Name Validation
+
+```bash
+git branch --show-current
+```
+
+**Pass criterion**: Branch name matches `^[A-Z]+-\d+/` — i.e., it starts with an issue key followed by a slash (e.g., `APR-184/branch-naming-standard`, `MUL-99/fix-null-deref`).
+
+**If validation fails**: You are on a branch that does not follow the required naming convention. **Do NOT open a PR.** Rename the branch first:
+
+```bash
+# Rename locally
+git branch -m <current-name> <IDENTIFIER>/<short-slug>
+# Push the correctly-named branch and set upstream
+git push -u origin <IDENTIFIER>/<short-slug>
+# Delete the old remote branch (if it was already pushed)
+git push origin --delete <old-name>
+```
+
+The correct format is: `<IDENTIFIER>/<short-slug>` where `<IDENTIFIER>` is the issue key (e.g., `APR-47`) and `<short-slug>` is a 2–5 word kebab-case description. See `symphony-execution` §1.1 for the full convention.
+
 ### 1.1 Tests
 
 ```bash
@@ -89,33 +110,7 @@ pnpm build
 
 **Pass criterion**: Build succeeds with no errors.
 
-### 1.5 Merge Conflict Check
-
-Before opening a PR, verify your branch has no merge conflicts with `main`:
-
-```bash
-git fetch origin main
-git merge --no-commit --no-ff origin/main && git merge --abort
-```
-
-**Pass criterion**: The trial merge succeeds without conflicts. The `merge --abort` cleans up the working tree afterward.
-
-**If conflicts exist**:
-1. Do NOT open the PR with known conflicts
-2. Rebase or merge `origin/main` into your branch and resolve the conflicts:
-   ```bash
-   git fetch origin main
-   git rebase origin/main
-   # Resolve conflicts in each conflicted file
-   git add <resolved files>
-   git rebase --continue
-   ```
-3. Re-run the full Pre-PR gate (tests, lint, typecheck, build) after resolving conflicts
-4. Then retry the merge conflict check
-
-**Why this check matters**: Merge conflicts that are only detected at the review/merge phase require human intervention. Detecting and resolving them before PR creation keeps the agent self-sufficient.
-
-### 1.6 Issue-Specific Acceptance Criteria Validation
+### 1.5 Issue-Specific Acceptance Criteria Validation
 
 If the issue description contains testable acceptance criteria:
 
@@ -165,26 +160,6 @@ If CI fails on GitHub but passes locally:
    ```
 4. Repeat until all checks pass
 
-### 2.3 Rollback on CI Failure
-
-If CI fails on the PR and the issue status was already transitioned to `in_review`, **roll back to `in_progress`**:
-
-```bash
-multica issue status <issue-id> in_progress
-```
-
-**When to roll back**: Any time CI is red and the issue is in `in_review`. This can happen when:
-- The agent transitioned to `in_review` before CI completed (a bug in the workflow)
-- CI was green when the PR was opened, but a later push or rebase broke it
-- An external dependency change caused CI to break
-
-**After rolling back**:
-1. Diagnose and fix the CI failure (follow §2.2)
-2. Push the fix and wait for CI to go green
-3. Only then transition back to `in_review`
-
-**Why this matters**: An issue in `in_review` with failing CI signals to reviewers that the PR is ready for human review when it isn't. Rolling back keeps the status honest and prevents reviewers from wasting time on broken PRs.
-
 ---
 
 ## Phase 3 — Pre-Merge Gate
@@ -231,11 +206,11 @@ All checks must be green on the rebased commit before merging.
 
 Complete this before opening a PR or requesting re-review:
 
+- [ ] Branch name matches `^[A-Z]+-\d+/` format (e.g., `APR-47/fix-login`)
 - [ ] `pnpm test` passes (zero failures)
 - [ ] `pnpm lint` passes (zero errors)
 - [ ] `pnpm typecheck` passes (zero errors, if applicable for this repo)
 - [ ] `pnpm build` passes (if applicable)
-- [ ] No merge conflicts with `main` (trial merge succeeds)
 - [ ] All testable acceptance criteria have test coverage
 - [ ] GitHub Actions CI is green on the pushed commit
 - [ ] PR description includes a test plan
