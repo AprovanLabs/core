@@ -24,6 +24,7 @@
   "defaults": {
     "visibility": "workspace",
     "max_concurrent_tasks": 3,
-    "runtime": "claude"
+    "runtime": "claude",
+    "fallback_model": "claude-haiku-4-5"
   }
 }
