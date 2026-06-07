@@ -22,6 +22,8 @@ export const DEFAULT_EXCLUSIONS: string[] = [
   ".hg",
   ".svn",
   ".desloppify",
+  ".multica",
+  ".agents",
   "*.min.js",
   "*.min.css",
   "*.bundle.js",

@@ -25,3 +25,6 @@ export {
   type ScanResult,
   type RunnerOptions,
 } from "./desloppify/index.js";
+
+// Quality subpath re-export (also available at @aprovan/devtools/quality)
+export { BASE_QUALITY_EXCLUSIONS } from "./quality.js";
