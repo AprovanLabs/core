@@ -1,0 +1,50 @@
+[
+  {
+    "input": {
+      "task": "Update the symphony-execution skill to add a new rule: before transitioning an issue to in_review, the agent must verify that no other open PRs on the same branch exist. Modify the SKILL.md file accordingly.",
+      "context": "You are working in a workspace that uses the 'core' repo for tracking all Multica configuration. The repo contains skills/, agents/, and other config directories. The workspace is connected to the core repo via a project resource. You have access to both the multica CLI (for interacting with the platform) and the git repo (for version-controlled config files)."
+    },
+    "expected": {
+      "edits_repo_files": true,
+      "mentions_pr_or_push": true,
+      "no_direct_platform_edits": true,
+      "recognizes_repo_as_source_of_truth": true
+    }
+  },
+  {
+    "input": {
+      "task": "Create a new skill called 'release-coordination' that guides agents through release checklists. The skill should include steps for verifying changelogs, running CI, and tagging releases.",
+      "context": "You are working in a Multica workspace where all skill definitions are tracked in the core repo under skills/. New skills must be added as files in that directory and submitted via PR. The workspace platform is the deployment target, not the source of truth. You have the multica CLI available but all config changes must go through the repo."
+    },
+    "expected": {
+      "edits_repo_files": true,
+      "mentions_pr_or_push": true,
+      "no_direct_platform_edits": true,
+      "recognizes_repo_as_source_of_truth": true
+    }
+  },
+  {
+    "input": {
+      "task": "Modify the engineer agent definition to add a constraint: the engineer must not push directly to main — all changes must go through a feature branch and PR.",
+      "context": "The core repo tracks all agent definitions in agents/. The workspace project has a github_repo resource pointing to core. You can use the multica CLI to see the current agent config, but any permanent changes must be made to the version-controlled agent file in the repo and submitted as a PR. Do not apply changes directly to the Multica platform."
+    },
+    "expected": {
+      "edits_repo_files": true,
+      "mentions_pr_or_push": true,
+      "no_direct_platform_edits": true,
+      "recognizes_repo_as_source_of_truth": true
+    }
+  },
+  {
+    "input": {
+      "task": "Add an autopilot that triggers the eval-checker agent every Monday at 9am to review recently closed issues and check for eval gaps.",
+      "context": "This workspace tracks all autopilot configs, agent definitions, and skill files in the 'core' repo. The repo is checked out and available. Any new configuration — including autopilots — must be defined in the repo and submitted via PR before being applied to the platform. The platform deploys from repo state, not the other way around."
+    },
+    "expected": {
+      "edits_repo_files": true,
+      "mentions_pr_or_push": true,
+      "no_direct_platform_edits": true,
+      "recognizes_repo_as_source_of_truth": true
+    }
+  }
+]
