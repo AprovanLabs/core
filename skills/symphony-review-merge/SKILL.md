@@ -16,9 +16,31 @@ This skill handles the review and merge lifecycle: responding to PR feedback and
 
 ## Phase 3 — Review Response
 
-### 3.0 Check Review Status
+### 3.0 Route to PR Reviewer
 
-Before acting, determine the current review state using the `github` MCP `get_pull_request` tool:
+When an implementing agent transitions an issue to `in_review`, the PR Reviewer agent handles the first-pass review automatically. The implementing agent must:
+
+1. Transition the issue to `in_review`: `multica issue status <issue-id> in_review`
+2. @mention the PR Reviewer agent in a comment on the issue:
+
+```bash
+multica issue comment add <issue-id> --content "PR ready for review: <pr_url>
+
+[@PR Reviewer](mention://agent/<pr-reviewer-agent-id>) please review."
+```
+
+The PR Reviewer will:
+- Check out the PR branch and read the diff
+- Validate CI is green
+- Evaluate against auto-approval criteria (see code-review skill)
+- If all criteria hold: approve on GitHub, squash-merge, transition issue to `done`
+- If any criterion fails: post escalation feedback on the issue, leave in `in_review` for human review
+
+**Human review is the fallback.** If the PR Reviewer escalates, a human reviewer picks up the issue from `in_review`. The implementing agent should NOT re-mention the PR Reviewer — it already provided its assessment.
+
+### 3.1 Check Review Status
+
+Before acting (as the implementing agent responding to review feedback), determine the current review state using the `github` MCP `get_pull_request` tool:
 - `owner`: AprovanLabs
 - `repo`: core (or patchwork — check the `pr_url` metadata to determine which)
 - `pull_number`: <number from pr_url metadata>
@@ -28,29 +50,28 @@ Check the `reviewDecision` field in the response.
 Branch on `reviewDecision`:
 
 - **`"APPROVED"`** → skip Phase 3 entirely, proceed directly to **Phase 4**.
-- **`"CHANGES_REQUESTED"`** → continue to 3.1 to address feedback.
+- **`"CHANGES_REQUESTED"`** → continue to 3.2 to address feedback.
 - **`null`** (no reviews yet) → **exit cleanly**:
   - Do NOT modify any code or open new commits.
   - Leave the issue in `in_review`.
   - The agent will be re-triggered when a review arrives.
 
-### 3.1 Entry
+### 3.2 Entry
 
 You are here when:
 - Issue status is `in_review`
 - A PR exists
 - `reviewDecision` is `"CHANGES_REQUESTED"`
 
-### Code Review Automation
+### Code Review Workflow
 
-When a PR is opened on an issue, the implementing agent should post a comment on the Multica issue requesting a code review. The Coordinator or any agent with the `code-review` skill can then review the PR and post their decision as a comment on the issue:
+The PR Reviewer agent is the first reviewer for all PRs. It evaluates auto-approval criteria and either:
+- **Auto-approves and merges** small, low-risk PRs (see code-review skill for criteria)
+- **Escalates to human** with specific concerns posted as a comment on the issue
 
-- **Approved**: Post "Code review approved. PR: <url>" and proceed to Phase 4.
-- **Changes requested**: Post "Changes requested on PR <url>: <summary of feedback>" — the implementing agent will address the feedback and re-submit.
+If the PR Reviewer escalates, a human reviewer provides the final decision. The implementing agent then addresses the human reviewer's feedback following the process below.
 
-This keeps review feedback visible in the issue timeline alongside the implementation history, rather than buried in GitHub review threads.
-
-### 3.2 Read All Review Feedback
+### 3.3 Read All Review Feedback
 
 Get the PR number from metadata:
 ```bash
@@ -61,7 +82,7 @@ Then read all feedback using the `github` MCP tools:
 - `get_pull_request_reviews` (`owner: AprovanLabs`, `repo: <repo>`, `pull_number: <n>`) — review decisions and top-level review comments
 - `get_pull_request_comments` (`owner: AprovanLabs`, `repo: <repo>`, `pull_number: <n>`) — inline code review comments
 
-### 3.3 Categorize Feedback
+### 3.4 Categorize Feedback
 
 Before implementing, categorize each comment:
 - **Must address**: change requests, correctness issues, security concerns
@@ -70,7 +91,7 @@ Before implementing, categorize each comment:
 
 If any feedback is unclear: reply with a clarifying question before changing code.
 
-### 3.4 Address Feedback
+### 3.5 Address Feedback
 
 **Critical rule**: Do NOT add speculative improvements unrelated to the review feedback. Only address what reviewers asked for.
 
@@ -89,7 +110,7 @@ git commit -m "review: <short description of what was addressed>"
 git push
 ```
 
-### 3.5 Confirm CI
+### 3.6 Confirm CI
 
 After pushing review changes, confirm CI is still passing using the `github` MCP `get_pull_request_status` tool:
 - `owner`: AprovanLabs
@@ -98,7 +119,7 @@ After pushing review changes, confirm CI is still passing using the `github` MCP
 
 Wait for all checks to show `success` before re-requesting review.
 
-### 3.6 Re-Request Review
+### 3.7 Re-Request Review
 
 Once all feedback is addressed and CI is green, use the `github` MCP `create_pull_request_review` tool:
 - `owner`: AprovanLabs
@@ -123,7 +144,7 @@ Post a brief result comment:
 multica issue comment add <issue-id> --content "Review feedback addressed (Round 2). Re-requested review. CI green."
 ```
 
-### 3.7 If Approved
+### 3.8 If Approved
 
 When all required reviewers approve → proceed to Phase 4.
 
