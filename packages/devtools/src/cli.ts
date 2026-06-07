@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { bootstrap } from "./commands/bootstrap.js";
 import { makeDesloppifyCommand } from "./commands/desloppify.js";
 import { gitRefresh } from "./commands/git-refresh.js";
+import { makeQualityCommand } from "./commands/quality.js";
 
 const program = new Command();
 
@@ -23,5 +24,6 @@ program
   .action(bootstrap);
 
 program.addCommand(makeDesloppifyCommand());
+program.addCommand(makeQualityCommand());
 
 program.parse();

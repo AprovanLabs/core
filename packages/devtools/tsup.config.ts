@@ -5,6 +5,7 @@ export default defineConfig({
     index: "src/index.ts",
     ports: "src/ports.ts",
     cli: "src/cli.ts",
+    quality: "src/quality.ts",
   },
   format: ["esm", "cjs"],
   dts: true,
