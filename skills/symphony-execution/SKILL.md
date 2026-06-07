@@ -231,9 +231,36 @@ Then use the `github` MCP `create_pull_request` tool with these parameters:
 
 The tool returns the PR URL — capture it for the next step.
 
-### 2.8 Update State
+### 2.8 CI-Wait Gate (Mandatory)
 
-After the PR is opened:
+**Do not transition to `in_review` until CI is green.** This step is mandatory, not optional.
+
+After `gh pr create` returns the PR URL:
+
+1. Wait for CI to complete on the pushed commit:
+   ```bash
+   gh pr checks <pr-number> --watch
+   ```
+
+2. **If all checks pass**: proceed to §2.9 (Update State).
+
+3. **If any check fails**:
+   - Read the failure log: `gh run view --log-failed`
+   - Fix the issue, commit, and push:
+     ```bash
+     git add <specific files>
+     git commit -m "fix: <description of CI fix>"
+     git push
+     gh pr checks <pr-number> --watch
+     ```
+   - Repeat until all checks pass
+   - **Do NOT** transition to `in_review` while CI is failing
+
+**This gate exists because** transitioning to `in_review` before CI confirms green creates false confidence. A failing PR in `in_review` requires human intervention that the agent could have resolved.
+
+### 2.9 Update State
+
+After the PR is opened AND CI is green:
 
 1. Update the workpad with PR URL and new phase
 2. Transition issue: `multica issue status <issue-id> in_review`
@@ -245,7 +272,7 @@ After the PR is opened:
    Summary:
    - <what was built>
    - <tests written>
-   - All CI gates passing"
+   - All CI gates passing (confirmed green)"
    ```
 
-**Exit Phase 2**: PR opened, CI expected to be green, issue `in_review`.
+**Exit Phase 2**: PR opened, CI confirmed green, issue `in_review`.
