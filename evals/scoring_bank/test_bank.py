@@ -36,6 +36,26 @@ def _make_entry(**overrides) -> ScoringEntry:
     return ScoringEntry(**defaults)
 
 
+def _make_usage_entry(**overrides) -> ScoringEntry:
+    """Factory for entries that include usage tracking fields."""
+    defaults = dict(
+        task_id="22222222-0000-0000-0000-000000000001",
+        task_identifier="APR-2",
+        model_id="claude-sonnet-4-6",
+        provider="anthropic-direct",
+        complexity_score=3,
+        quality_score=4.0,
+        task_success=True,
+        revision_cycles=0,
+        was_reassigned=False,
+        tokens_input=1000,
+        tokens_output=500,
+        cost_usd=0.01,
+    )
+    defaults.update(overrides)
+    return ScoringEntry(**defaults)
+
+
 # ---------------------------------------------------------------------------
 # ScoringEntry serialisation
 # ---------------------------------------------------------------------------
@@ -60,6 +80,30 @@ def test_entry_recorded_at_default():
     entry = _make_entry()
     assert entry.recorded_at  # non-empty
     assert "T" in entry.recorded_at  # ISO-8601 includes "T"
+
+
+def test_entry_usage_fields_default_none():
+    entry = _make_entry()
+    assert entry.provider is None
+    assert entry.tokens_input is None
+    assert entry.tokens_output is None
+    assert entry.cost_usd is None
+
+
+def test_entry_usage_fields_roundtrip_json():
+    entry = _make_usage_entry()
+    restored = ScoringEntry.from_json(entry.to_json())
+    assert restored.provider == "anthropic-direct"
+    assert restored.tokens_input == 1000
+    assert restored.tokens_output == 500
+    assert restored.cost_usd == pytest.approx(0.01)
+
+
+def test_entry_usage_fields_roundtrip_dict():
+    entry = _make_usage_entry(provider="openrouter", cost_usd=0.005)
+    restored = ScoringEntry.from_dict(entry.to_dict())
+    assert restored.provider == "openrouter"
+    assert restored.cost_usd == pytest.approx(0.005)
 
 
 # ---------------------------------------------------------------------------
@@ -132,6 +176,20 @@ def test_query_no_filters_returns_all(tmp_bank):
     assert len(tmp_bank.query()) == 5
 
 
+def test_query_by_provider(tmp_bank):
+    tmp_bank.record(_make_usage_entry(provider="openrouter"))
+    tmp_bank.record(_make_usage_entry(provider="anthropic-direct"))
+    tmp_bank.record(_make_usage_entry(provider="openrouter"))
+    results = tmp_bank.query(provider="openrouter")
+    assert len(results) == 2
+    assert all(e.provider == "openrouter" for e in results)
+
+
+def test_query_provider_no_match(tmp_bank):
+    tmp_bank.record(_make_usage_entry(provider="openrouter"))
+    assert tmp_bank.query(provider="opencode") == []
+
+
 # ---------------------------------------------------------------------------
 # ScoringBank.aggregate_by_model
 # ---------------------------------------------------------------------------
@@ -153,6 +211,67 @@ def test_aggregate_by_model(tmp_bank):
 
 def test_aggregate_by_model_empty(tmp_bank):
     assert tmp_bank.aggregate_by_model() == {}
+
+
+def test_aggregate_by_model_with_cost(tmp_bank):
+    tmp_bank.record(_make_usage_entry(model_id="sonnet", cost_usd=0.01, tokens_input=1000, tokens_output=500))
+    tmp_bank.record(_make_usage_entry(model_id="sonnet", cost_usd=0.03, tokens_input=2000, tokens_output=1000))
+    tmp_bank.record(_make_usage_entry(model_id="haiku", cost_usd=0.005))
+
+    stats = tmp_bank.aggregate_by_model()
+    assert stats["sonnet"].total_cost_usd == pytest.approx(0.04)
+    assert stats["sonnet"].avg_cost_usd == pytest.approx(0.02)
+    assert stats["sonnet"].total_tokens_input == 3000
+    assert stats["sonnet"].total_tokens_output == 1500
+    assert stats["haiku"].total_cost_usd == pytest.approx(0.005)
+
+
+def test_aggregate_by_model_no_cost_entries(tmp_bank):
+    """Entries without cost_usd should not inflate cost stats."""
+    tmp_bank.record(_make_entry(model_id="mid"))  # no cost_usd
+    stats = tmp_bank.aggregate_by_model()
+    assert stats["mid"].total_cost_usd == pytest.approx(0.0)
+    assert stats["mid"].avg_cost_usd == pytest.approx(0.0)
+
+
+# ---------------------------------------------------------------------------
+# ScoringBank.aggregate_by_provider
+# ---------------------------------------------------------------------------
+
+
+def test_aggregate_by_provider(tmp_bank):
+    tmp_bank.record(_make_usage_entry(provider="openrouter", cost_usd=0.01, tokens_input=500, tokens_output=200, task_success=True))
+    tmp_bank.record(_make_usage_entry(provider="openrouter", cost_usd=0.02, tokens_input=800, tokens_output=400, task_success=False))
+    tmp_bank.record(_make_usage_entry(provider="anthropic-direct", cost_usd=0.05, tokens_input=1500, tokens_output=700, task_success=True))
+
+    stats = tmp_bank.aggregate_by_provider()
+    assert "openrouter" in stats
+    assert "anthropic-direct" in stats
+
+    or_stats = stats["openrouter"]
+    assert or_stats.entry_count == 2
+    assert or_stats.total_cost_usd == pytest.approx(0.03)
+    assert or_stats.avg_cost_usd == pytest.approx(0.015)
+    assert or_stats.total_tokens_input == 1300
+    assert or_stats.total_tokens_output == 600
+    assert or_stats.success_rate == pytest.approx(0.5)
+
+    ad_stats = stats["anthropic-direct"]
+    assert ad_stats.entry_count == 1
+    assert ad_stats.total_cost_usd == pytest.approx(0.05)
+    assert ad_stats.success_rate == pytest.approx(1.0)
+
+
+def test_aggregate_by_provider_skips_none_provider(tmp_bank):
+    """Entries without a provider set must not appear in provider aggregations."""
+    tmp_bank.record(_make_entry())  # provider=None
+    tmp_bank.record(_make_usage_entry(provider="openrouter"))
+    stats = tmp_bank.aggregate_by_provider()
+    assert list(stats.keys()) == ["openrouter"]
+
+
+def test_aggregate_by_provider_empty(tmp_bank):
+    assert tmp_bank.aggregate_by_provider() == {}
 
 
 # ---------------------------------------------------------------------------
@@ -226,6 +345,32 @@ def test_cli_record(tmp_path, capsys):
     assert entry_data["task_success"] is True
 
 
+def test_cli_record_with_usage_fields(tmp_path, capsys):
+    data_file = tmp_path / "scores.jsonl"
+    cli_main([
+        "--data-path", str(data_file),
+        "record",
+        "--task-id", "bbbbbbbb-0000-0000-0000-000000000002",
+        "--task-identifier", "APR-100",
+        "--model-id", "claude-sonnet-4-6",
+        "--complexity", "3",
+        "--quality", "4.0",
+        "--success",
+        "--revision-cycles", "0",
+        "--provider", "anthropic-direct",
+        "--tokens-in", "1200",
+        "--tokens-out", "600",
+        "--cost-usd", "0.015",
+    ])
+    lines = data_file.read_text().strip().splitlines()
+    assert len(lines) == 1
+    entry_data = json.loads(lines[0])
+    assert entry_data["provider"] == "anthropic-direct"
+    assert entry_data["tokens_input"] == 1200
+    assert entry_data["tokens_output"] == 600
+    assert entry_data["cost_usd"] == pytest.approx(0.015)
+
+
 def test_cli_query(tmp_path, capsys):
     data_file = tmp_path / "scores.jsonl"
     bank = ScoringBank(data_path=data_file)
@@ -238,6 +383,18 @@ def test_cli_query(tmp_path, capsys):
     assert out[0]["task_identifier"] == "APR-10"
 
 
+def test_cli_query_by_provider(tmp_path, capsys):
+    data_file = tmp_path / "scores.jsonl"
+    bank = ScoringBank(data_path=data_file)
+    bank.record(_make_usage_entry(provider="openrouter", task_identifier="APR-20"))
+    bank.record(_make_usage_entry(provider="anthropic-direct", task_identifier="APR-21"))
+
+    cli_main(["--data-path", str(data_file), "query", "--provider", "openrouter"])
+    out = json.loads(capsys.readouterr().out)
+    assert len(out) == 1
+    assert out[0]["task_identifier"] == "APR-20"
+
+
 def test_cli_aggregate_by_model(tmp_path, capsys):
     data_file = tmp_path / "scores.jsonl"
     bank = ScoringBank(data_path=data_file)
@@ -248,6 +405,22 @@ def test_cli_aggregate_by_model(tmp_path, capsys):
     out = json.loads(capsys.readouterr().out)
     assert "m1" in out
     assert out["m1"]["avg_quality_score"] == pytest.approx(3.0)
+    assert "total_cost_usd" in out["m1"]
+    assert "total_tokens_input" in out["m1"]
+
+
+def test_cli_aggregate_by_provider(tmp_path, capsys):
+    data_file = tmp_path / "scores.jsonl"
+    bank = ScoringBank(data_path=data_file)
+    bank.record(_make_usage_entry(provider="openrouter", cost_usd=0.01))
+    bank.record(_make_usage_entry(provider="openrouter", cost_usd=0.02))
+
+    cli_main(["--data-path", str(data_file), "aggregate", "--by", "provider"])
+    out = json.loads(capsys.readouterr().out)
+    assert "openrouter" in out
+    assert out["openrouter"]["entry_count"] == 2
+    assert out["openrouter"]["total_cost_usd"] == pytest.approx(0.03)
+    assert out["openrouter"]["avg_cost_usd"] == pytest.approx(0.015)
 
 
 def test_cli_aggregate_by_complexity(tmp_path, capsys):
