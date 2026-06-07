@@ -16,3 +16,9 @@ pnpm-lock.yaml
 
 # Local Phoenix data (eval results database)
 evals/.phoenix-data/
+
+# Python bytecode and virtualenvs
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/

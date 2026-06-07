@@ -57,11 +57,58 @@ When assigned an issue to check, follow these steps:
    multica issue metadata set <new-eval-id> --key source_git_sha --value <sha-or-unavailable>
    multica issue metadata set <new-eval-id> --key source_config_sha --value <sha-or-unavailable>
    ```
-7. **Mark the original issue as processed** — set metadata:
+7. **Record a quality score in the scoring bank** — this is required for every issue processed, regardless of whether an eval was created:
+
+   Gather quality signals from the issue and comment timeline, then record an entry:
+
+   **a. Collect signals:**
+   - `model_id`: check issue metadata for `model_used` key (set by APR-208 usage tracking); fall back to `"unknown"` if absent
+   - `complexity_score`: check issue metadata for `complexity_score` key; fall back to `3` (medium) if absent
+   - `task_success`: `true` if issue status is `done` and a PR was merged; `false` otherwise
+   - `revision_cycles`: count comments where a reviewer used the word "CHANGES_REQUESTED" or asked for substantive rework; approximate from review feedback
+   - `was_reassigned`: `true` if the comment timeline shows the issue was re-assigned to a different agent after initial assignment
+   - `human_review_score`: if a member left an explicit numeric score (e.g. "Score: 4/5"), parse it; otherwise omit (use `null`)
+   - `eval_notes`: 1-2 sentence summary of the quality signal (e.g. "Task succeeded on first pass. No rework needed.")
+
+   **b. Record via CLI (requires repo checkout):**
+   ```bash
+   # Checkout the core repo if not already done
+   multica repo checkout https://github.com/AprovanLabs/core
+
+   cd evals
+   pip install -e . -q
+   python -m scoring_bank record \
+     --task-id <source-issue-id> \
+     --task-identifier <source-issue-identifier> \
+     --model-id <model_id> \
+     --complexity <complexity_score> \
+     --quality <quality_score> \
+     [--success | --no-success] \
+     --revision-cycles <n> \
+     [--reassigned] \
+     [--human-review-score <n>] \
+     --notes "<eval_notes>"
+   ```
+
+   **c. Commit the updated scores file:**
+   ```bash
+   cd ..  # back to repo root
+   git add evals/scoring_bank/data/scores.jsonl
+   git commit -m "score: record quality entry for <source-issue-identifier>"
+   git push
+   ```
+
+   > If the repo checkout fails or git push is not possible, record the score data as a structured comment instead:
+   > ```
+   > **Quality Score (manual):** task_id=<id>, model=<model>, complexity=<n>, quality=<n>, success=<bool>, cycles=<n>
+   > ```
+   > This allows a human to batch-import later.
+
+8. **Mark the original issue as processed** — set metadata:
    ```
    multica issue metadata set <issue-id> --key eval_checked --value true --type bool
    ```
-8. **Post a result comment** on your assigned task issue summarizing what you found and any evals you created. Include a note on whether provenance SHAs were captured or unavailable.
+9. **Post a result comment** on your assigned task issue summarizing what you found and any evals you created. Include a note on whether provenance SHAs were captured or unavailable, and whether the quality score was successfully recorded in the bank.
 
 ## Eval Scenario Spec
 
@@ -132,9 +179,21 @@ Provenance capture is best-effort. **Always create the eval ticket**, even when 
 - `gh pr diff <number> --name-only` — list files changed in a PR
 - `git rev-parse HEAD:<path>` — get blob SHA of a file at HEAD
 
+### Scoring Bank Commands
+
+- `cd evals && pip install -e . -q` — install the evals package (includes scoring_bank)
+- `python -m scoring_bank record --task-id <uuid> --task-identifier <key> --model-id <model> --complexity <1-5> --quality <1-5> [--success|--no-success] --revision-cycles <n> [--reassigned] [--notes "<text>"]` — record a quality score
+- `python -m scoring_bank query [--model-id <model>] [--min-complexity <n>] [--max-complexity <n>]` — query entries
+- `python -m scoring_bank aggregate --by model` — per-model quality stats (for model selection engine)
+- `python -m scoring_bank aggregate --by complexity` — per-complexity-tier stats
+- `python -m scoring_bank model-quality --complexity <1-5>` — avg quality score per model at a given tier
+- `python -m scoring_bank export` — export all entries as JSON
+
 ## Important
 
 - You are running on a free/cheap model to minimize cost. Keep your analysis concise.
 - Always post a result comment on your assigned task issue when done.
 - The parent issue for eval suggestions is APR-63 (ID: 33ba4f84-e612-4081-a578-9e4a9ee9b125).
 - Eval suggestions should be created in `in_review` status so the user can review and approve/reject them.
+- **Always record a scoring bank entry** for every issue processed — even when no eval is created. The scoring bank is how the model selection engine learns over time. An entry with `quality_score=3` and `eval_notes="No issues"` is a valid and useful signal.
+- Quality score (`--quality`) is your holistic 1–5 assessment: 5 = excellent output, no corrections needed; 3 = acceptable but required rework; 1 = poor, task largely failed or was reassigned.
