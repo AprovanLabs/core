@@ -72,10 +72,9 @@ export function makeDesloppifyCommand(): Command {
     .action((opts) => {
       const profile = opts.profile as ScanProfile;
       if (!["objective", "full", "ci"].includes(profile)) {
-        console.error(
+        throw new Error(
           `Invalid profile: ${profile}. Must be objective, full, or ci.`,
         );
-        process.exit(1);
       }
 
       const allExclusions = [...DEFAULT_EXCLUSIONS, ...opts.exclusions];

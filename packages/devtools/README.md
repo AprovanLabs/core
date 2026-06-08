@@ -74,6 +74,59 @@ devtools desloppify --repo . --profile ci --output desloppify-results.json
 
 Use the `desloppify-issues` skill (see `skills/desloppify-issues/`) to parse the JSON output and create structured Multica issues for T1/T2 findings.
 
+### `devtools quality`
+
+Run desloppify quality scans with shared defaults and consistent output.
+
+**Subcommands:**
+
+#### `devtools quality scan`
+
+Scan a path for code quality issues.
+
+```bash
+devtools quality scan [--path <path>] [--profile ci|full|objective] [--package <name>] [--state <path>] [--json] [--no-badge]
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| `--path <path>` | Path to scan | cwd |
+| `--profile <profile>` | Scan profile: `ci`, `full`, or `objective` | `ci` |
+| `--package <name>` | Scan a single package by name (monorepo) | — |
+| `--state <path>` | State directory for isolation | — |
+| `--json` | Output results as JSON only | — |
+| `--no-badge` | Suppress badge output | — |
+
+#### `devtools quality status`
+
+Report quality status from desloppify state; exits non-zero if score is below threshold.
+
+```bash
+devtools quality status [--path <path>] [--state <path>] [--threshold <n>] [--json]
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| `--path <path>` | Path to scan/repo | cwd |
+| `--state <path>` | Path to desloppify state file or directory | — |
+| `--threshold <n>` | Minimum overall score required | `70` |
+| `--json` | Emit JSON only | — |
+
+#### `devtools quality next`
+
+List the next prioritized desloppify fix items as structured JSON.
+
+```bash
+devtools quality next [--path <path>] [--state <path>] [--count <n>] [--json]
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| `--path <path>` | Path to scan/repo | cwd |
+| `--state <path>` | Path to desloppify state file or directory | — |
+| `--count <n>` | Number of items to return | `10` |
+| `--json` | Emit JSON only | — |
+
 ### `devtools git-refresh`
 
 Update git submodules and pull latest changes recursively.
@@ -81,6 +134,16 @@ Update git submodules and pull latest changes recursively.
 ### `devtools bootstrap`
 
 Set up a repo with Cicadas, agent context, and symlinks.
+
+## Development
+
+```bash
+pnpm build        # compile TypeScript via tsup
+pnpm dev          # watch mode
+pnpm test         # run vitest test suite
+pnpm typecheck    # type-check without emitting
+pnpm lint         # run ESLint
+```
 
 ## Programmatic API
 

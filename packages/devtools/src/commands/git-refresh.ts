@@ -9,8 +9,7 @@ export function gitRefresh(): void {
       { stdio: "inherit" },
     );
     console.log("\n✓ Repository refreshed successfully.");
-  } catch {
-    console.error("\n✗ Failed to refresh repository.");
-    process.exit(1);
+  } catch (err) {
+    throw new Error(`\n✗ Failed to refresh repository.\n${String(err)}`);
   }
 }
