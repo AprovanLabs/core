@@ -21,6 +21,7 @@ export interface PackageResult {
     strict: number;
   };
   issues: DesloppifyIssue[];
+  error?: string;
 }
 
 export interface ScanResult {
