@@ -268,6 +268,7 @@ export function runDesloppifyScan(options: RunnerOptions): ScanResult {
           path: pkgRelPath,
           score: { overall: 0, objective: 0, strict: 0 },
           issues: [],
+          error: String(err),
         });
       }
     }

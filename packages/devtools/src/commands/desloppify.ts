@@ -14,6 +14,9 @@ function formatSummary(result: ScanResult): string {
 
   for (const pkg of result.packages) {
     lines.push(`Package: ${pkg.name} (${pkg.path})`);
+    if (pkg.error) {
+      lines.push(`  Error: ${pkg.error}`);
+    }
     lines.push(
       `  Score: overall=${pkg.score.overall} objective=${pkg.score.objective} strict=${pkg.score.strict}`,
     );
