@@ -6,6 +6,7 @@ export default defineConfig({
     ports: "src/ports.ts",
     cli: "src/cli.ts",
     quality: "src/quality.ts",
+    "model-selection": "src/model-selection/index.ts",
   },
   format: ["esm", "cjs"],
   dts: true,
