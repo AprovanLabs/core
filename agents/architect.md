@@ -8,6 +8,7 @@ skills:
   - design-planning
   - code-review
   - workpad
+  - karpathy-guidelines
   - brainstorming
 mcp:
   - github
