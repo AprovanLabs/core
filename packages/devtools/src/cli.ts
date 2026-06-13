@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 import { bootstrap } from "./commands/bootstrap.js";
+import { makeCreateIssuesCommand } from "./commands/create-issues.js";
 import { makeDesloppifyCommand } from "./commands/desloppify.js";
 import { gitRefresh } from "./commands/git-refresh.js";
 import { makeQualityCommand } from "./commands/quality.js";
@@ -24,6 +25,7 @@ program
   .action(bootstrap);
 
 program.addCommand(makeDesloppifyCommand());
+program.addCommand(makeCreateIssuesCommand());
 program.addCommand(makeQualityCommand());
 
 program.parse();
