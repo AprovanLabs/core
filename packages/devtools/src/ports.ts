@@ -41,7 +41,7 @@ export interface PortAllocation {
 /**
  * Check if a specific port is available.
  */
-export async function isPortAvailable(port: number): Promise<boolean> {
+export function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = createServer();
     server.once("error", () => resolve(false));
