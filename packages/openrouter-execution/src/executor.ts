@@ -1,7 +1,7 @@
-import { ExecutionError, type ExecutionRequest, type ExecutionResult } from './types.js';
-import { resolveTier } from './tier-router.js';
 import { MODEL_CATALOG } from './model-catalog.js';
 import { OpenRouterClient, type ChatMessage } from './openrouter-client.js';
+import { resolveTier } from './tier-router.js';
+import { ExecutionError, type ExecutionRequest, type ExecutionResult } from './types.js';
 
 export interface ExecutorConfig {
   openRouterApiKey: string;

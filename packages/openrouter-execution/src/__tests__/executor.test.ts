@@ -9,7 +9,7 @@ const TEST_CONFIG = {
   maxRetries: 1,
 };
 
-function makeSuccessResponse(model = 'deepseek/deepseek-v4-flash:free', content = 'Hello!') {
+function makeSuccessResponse(model = 'deepseek/deepseek-v4-flash:free', content = 'Hello!'): object {
   return {
     id: 'test-id',
     model,
