@@ -24,6 +24,11 @@
       "types": "./dist/quality.d.ts",
       "import": "./dist/quality.js",
       "require": "./dist/quality.cjs"
+    },
+    "./model-selection": {
+      "types": "./dist/model-selection.d.ts",
+      "import": "./dist/model-selection.js",
+      "require": "./dist/model-selection.cjs"
     }
   },
   "files": [
