@@ -4,6 +4,9 @@
       "path": "../projects",
     },
     {
+      "path": "../registry",
+    },
+    {
       "path": "../apprentice",
     },
     {

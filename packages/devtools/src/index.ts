@@ -9,7 +9,6 @@ export {
   allocatePorts,
   isPortAvailable,
   getAvailablePort,
-  SERVICE_OFFSETS,
   type PortAllocationOptions,
   type PortAllocation,
 } from "./ports.js";

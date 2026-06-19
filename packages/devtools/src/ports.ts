@@ -102,24 +102,3 @@ export async function getAvailablePort(startPort: number): Promise<number> {
   }
   return port;
 }
-
-/**
- * Service port offsets for common configurations.
- *
- * Usage:
- * ```typescript
- * const ports = await allocatePorts({ base: 3700, count: 3 });
- * const clientPort = ports.ports[SERVICE_OFFSETS.client];
- * const stitcheryPort = ports.ports[SERVICE_OFFSETS.stitchery];
- * ```
- */
-export const SERVICE_OFFSETS = {
-  /** Main client/frontend (offset 0) */
-  client: 0,
-  /** Stitchery backend service (offset 1) */
-  stitchery: 1,
-  /** Copilot proxy (offset 2) */
-  copilotProxy: 2,
-  /** Additional services (offset 3+) */
-  extra: 3,
-} as const;
