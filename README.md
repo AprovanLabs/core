@@ -38,3 +38,12 @@ To run all hooks manually:
 ```bash
 pre-commit run --all-files
 ```
+
+## Scripts
+
+```sh
+ln -s ./repos/dotfiles/.agents .agents
+
+uv pip install graph-sitter
+uv tool install graph-sitter --python 3.13
+```

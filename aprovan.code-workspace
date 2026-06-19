@@ -1,9 +1,6 @@
 {
   "folders": [
     {
-      "path": "../projects",
-    },
-    {
       "path": "../registry",
     },
     {
@@ -11,9 +8,6 @@
     },
     {
       "path": "../patchwork",
-    },
-    {
-      "path": "../registry",
     },
     {
       "path": "../stitchery",
@@ -26,14 +20,6 @@
     },
     {
       "path": "../zolvery",
-    },
-    {
-      "name": "memory",
-      "path": "../apprentice/.apprentice",
-    },
-    {
-      "name": "working",
-      "path": "../apprentice/.working",
     },
     {
       "path": "../cicadas",

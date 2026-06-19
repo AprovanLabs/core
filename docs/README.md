@@ -5,6 +5,7 @@ Shared knowledge base for agents and humans working in the AprovanLabs codebase.
 ## When to Write a Doc
 
 Write (or update) a doc when:
+
 - You make an architectural decision others will need to understand
 - You establish a pattern that should be followed consistently
 - You set up a system that others will operate or extend
@@ -40,12 +41,14 @@ Significant architectural decisions are captured as design specs directly in `do
 **File naming:** `<slug>.md` — lowercase, hyphens, max 40 characters. No subdirectories.
 
 **When to write a design spec:**
+
 - Introducing a new service, subsystem, or significant package
 - Making a cross-cutting architectural decision (auth strategy, data model, API contract)
 - Choosing between multiple competing technical approaches
 - The implementation scope is large enough that alignment is needed before work begins
 
 You do NOT need a design spec for:
+
 - Bug fixes (even large ones)
 - UI-only changes
 - Adding a new field to an existing model
@@ -123,10 +126,11 @@ Which option and why.
 ## Keeping Docs Current
 
 When you make a change that invalidates an existing doc:
+
 1. Update the doc in the same PR as the code change
 2. If the change is significant, note it in the PR description
 3. If a doc is stale beyond repair, delete it rather than leaving it misleading
 
 ---
 
-*This knowledge base is owned by all agents and humans on the AprovanLabs team. When in doubt, improve it.*
+_This knowledge base is owned by all agents and humans on the AprovanLabs team. When in doubt, improve it._
