@@ -1,0 +1,217 @@
+{
+    "status": "ok",
+    "domain": "lahilo.aprovan.com",
+    "styleguide": {
+        "mode": "light",
+        "colors": {
+            "accent": "#000000",
+            "background": "#ffffff",
+            "text": "#64748b"
+        },
+        "typography": {
+            "headings": {
+                "h1": {
+                    "fontFamily": "ui-sans-serif",
+                    "fontSize": "32px",
+                    "fontWeight": 700,
+                    "lineHeight": "38px",
+                    "letterSpacing": "0px",
+                    "fontFallbacks": [
+                        "ui-sans-serif",
+                        "system-ui",
+                        "sans-serif",
+                        "Apple Color Emoji",
+                        "Segoe UI Emoji",
+                        "Segoe UI Symbol",
+                        "Noto Color Emoji"
+                    ]
+                },
+                "h2": {
+                    "fontFamily": "ui-sans-serif",
+                    "fontSize": "27px",
+                    "fontWeight": 400,
+                    "lineHeight": "32px",
+                    "letterSpacing": "0px",
+                    "fontFallbacks": [
+                        "ui-sans-serif",
+                        "system-ui",
+                        "sans-serif",
+                        "Apple Color Emoji",
+                        "Segoe UI Emoji",
+                        "Segoe UI Symbol",
+                        "Noto Color Emoji"
+                    ]
+                },
+                "h3": {
+                    "fontFamily": "ui-sans-serif",
+                    "fontSize": "23px",
+                    "fontWeight": 400,
+                    "lineHeight": "24px",
+                    "letterSpacing": "0px",
+                    "fontFallbacks": [
+                        "ui-sans-serif",
+                        "system-ui",
+                        "sans-serif",
+                        "Apple Color Emoji",
+                        "Segoe UI Emoji",
+                        "Segoe UI Symbol",
+                        "Noto Color Emoji"
+                    ]
+                },
+                "h4": {
+                    "fontFamily": "ui-sans-serif",
+                    "fontSize": "19px",
+                    "fontWeight": 400,
+                    "lineHeight": "23px",
+                    "letterSpacing": "0px",
+                    "fontFallbacks": [
+                        "ui-sans-serif",
+                        "system-ui",
+                        "sans-serif",
+                        "Apple Color Emoji",
+                        "Segoe UI Emoji",
+                        "Segoe UI Symbol",
+                        "Noto Color Emoji"
+                    ]
+                }
+            },
+            "p": {
+                "fontFamily": "ui-sans-serif",
+                "fontSize": "16px",
+                "fontWeight": 400,
+                "lineHeight": "24px",
+                "letterSpacing": "0px",
+                "fontFallbacks": [
+                    "ui-sans-serif",
+                    "system-ui",
+                    "sans-serif",
+                    "Apple Color Emoji",
+                    "Segoe UI Emoji",
+                    "Segoe UI Symbol",
+                    "Noto Color Emoji"
+                ]
+            }
+        },
+        "elementSpacing": {
+            "xs": "8px",
+            "sm": "16px",
+            "md": "32px",
+            "lg": "48px",
+            "xl": "64px"
+        },
+        "shadows": {
+            "sm": "rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+            "md": "none",
+            "lg": "none",
+            "xl": "none",
+            "inner": "none"
+        },
+        "components": {
+            "button": {
+                "primary": {
+                    "backgroundColor": "#f8fafc",
+                    "color": "#64748b",
+                    "borderColor": "#f8fafc",
+                    "borderRadius": "4px 4px 0px 0px",
+                    "borderWidth": "2px",
+                    "borderStyle": "solid",
+                    "padding": "16px 16px 12px",
+                    "fontSize": "14px",
+                    "fontWeight": 400,
+                    "minWidth": "384px",
+                    "minHeight": "84px",
+                    "textDecoration": "none",
+                    "boxShadow": "none",
+                    "fontFallbacks": [
+                        "ui-sans-serif",
+                        "system-ui",
+                        "sans-serif",
+                        "Apple Color Emoji",
+                        "Segoe UI Emoji",
+                        "Segoe UI Symbol",
+                        "Noto Color Emoji"
+                    ],
+                    "fontFamily": "ui-sans-serif",
+                    "css": "box-sizing: border-box; display: inline-block; min-width: 384px; min-height: 84px; background-color: #f8fafc; color: #64748b; border: 2px solid #f8fafc; border-radius: 4px 4px 0px 0px; padding: 16px 16px 12px; font-size: 14px; font-weight: 400; font-family: ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"; text-decoration: none;"
+                },
+                "secondary": {
+                    "backgroundColor": "#f8fafc",
+                    "color": "#64748b",
+                    "borderColor": "#f8fafc",
+                    "borderRadius": "4px 4px 0px 0px",
+                    "borderWidth": "2px",
+                    "borderStyle": "solid",
+                    "padding": "16px 16px 12px",
+                    "fontSize": "14px",
+                    "fontWeight": 400,
+                    "minWidth": "384px",
+                    "minHeight": "84px",
+                    "textDecoration": "none",
+                    "boxShadow": "none",
+                    "fontFallbacks": [
+                        "ui-sans-serif",
+                        "system-ui",
+                        "sans-serif",
+                        "Apple Color Emoji",
+                        "Segoe UI Emoji",
+                        "Segoe UI Symbol",
+                        "Noto Color Emoji"
+                    ],
+                    "fontFamily": "ui-sans-serif",
+                    "css": "box-sizing: border-box; display: inline-block; min-width: 384px; min-height: 84px; background-color: #f8fafc; color: #64748b; border: 2px solid #f8fafc; border-radius: 4px 4px 0px 0px; padding: 16px 16px 12px; font-size: 14px; font-weight: 400; font-family: ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"; text-decoration: none;"
+                },
+                "link": {
+                    "borderRadius": "0px",
+                    "borderWidth": "0px",
+                    "borderStyle": "none",
+                    "padding": "0px",
+                    "fontSize": "14px",
+                    "fontWeight": 400,
+                    "minWidth": "0px",
+                    "minHeight": "0px",
+                    "textDecoration": "underline",
+                    "boxShadow": "none",
+                    "backgroundColor": "transparent",
+                    "color": "#64748b",
+                    "borderColor": "transparent",
+                    "fontFallbacks": [
+                        "ui-sans-serif",
+                        "system-ui",
+                        "sans-serif",
+                        "Apple Color Emoji",
+                        "Segoe UI Emoji",
+                        "Segoe UI Symbol",
+                        "Noto Color Emoji"
+                    ],
+                    "fontFamily": "ui-sans-serif",
+                    "css": "color: #64748b; font-size: 14px; font-weight: 400; font-family: ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"; text-decoration: underline;"
+                }
+            },
+            "card": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e5e7eb",
+                "borderRadius": "8px",
+                "borderWidth": "1px",
+                "borderStyle": "solid",
+                "padding": "16px",
+                "boxShadow": "none",
+                "textColor": "#64748b",
+                "css": "background-color: #ffffff; color: #64748b; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;"
+            }
+        },
+        "fontLinks": {
+            "Noto Color Emoji": {
+                "type": "google",
+                "files": {
+                    "400": "https://fonts.gstatic.com/s/notocoloremoji/v39/Yq6P-KqIXTD0t4D9z1ESnKM3-HpFab5s79iz64w.ttf"
+                },
+                "category": "sans-serif"
+            }
+        }
+    },
+    "code": 200,
+    "key_metadata": {
+        "credits_consumed": 10,
+        "credits_remaining": 480
+    }
+}

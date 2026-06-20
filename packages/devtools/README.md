@@ -171,10 +171,6 @@ devtools quality next [--path <path>] [--state <path>] [--count <n>] [--json]
 | `--count <n>` | Number of items to return | `10` |
 | `--json` | Emit JSON only | — |
 
-### `devtools git-refresh`
-
-Update git submodules and pull latest changes recursively.
-
 ### `devtools bootstrap`
 
 Set up a repo with Cicadas, agent context, and symlinks.

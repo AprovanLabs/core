@@ -46,12 +46,6 @@
       "path": "../formulast",
     },
     {
-      "path": "../copilot-proxy",
-    },
-    {
-      "path": "../claude-proxy",
-    },
-    {
       "path": "../publishing",
     },
     {

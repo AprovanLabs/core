@@ -9,21 +9,11 @@
       "id": "opencode",
       "display_name": "OpenCode",
       "default_model": "synthetic/hf:zai-org/GLM-5.1"
-    },
-    "gemini": {
-      "id": "gemini",
-      "display_name": "Gemini",
-      "default_model": "gemini-2.5-pro"
-    },
-    "kiro": {
-      "id": "kiro",
-      "display_name": "Kiro",
-      "default_model": "claude-sonnet-4-6"
     }
   },
   "defaults": {
     "visibility": "workspace",
-    "max_concurrent_tasks": 3,
+    "max_concurrent_tasks": 1,
     "runtime": "claude",
     "fallback_model": "claude-haiku-4-5"
   }

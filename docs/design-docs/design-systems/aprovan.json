@@ -1,0 +1,299 @@
+{
+    "status": "ok",
+    "domain": "aprovan.com",
+    "styleguide": {
+        "mode": "light",
+        "colors": {
+            "accent": "#ef4343",
+            "background": "#ffffff",
+            "text": "#0f172a"
+        },
+        "typography": {
+            "headings": {
+                "h1": {
+                    "fontFamily": "-apple-system",
+                    "fontSize": "32px",
+                    "fontWeight": 700,
+                    "lineHeight": "38px",
+                    "letterSpacing": "0px",
+                    "fontFallbacks": [
+                        "-apple-system",
+                        "BlinkMacSystemFont",
+                        "Segoe UI",
+                        "Roboto",
+                        "Oxygen",
+                        "Ubuntu",
+                        "Cantarell",
+                        "Fira Sans",
+                        "Droid Sans",
+                        "Helvetica Neue",
+                        "sans-serif"
+                    ]
+                },
+                "h2": {
+                    "fontFamily": "-apple-system",
+                    "fontSize": "27px",
+                    "fontWeight": 700,
+                    "lineHeight": "32px",
+                    "letterSpacing": "0px",
+                    "fontFallbacks": [
+                        "-apple-system",
+                        "BlinkMacSystemFont",
+                        "Segoe UI",
+                        "Roboto",
+                        "Oxygen",
+                        "Ubuntu",
+                        "Cantarell",
+                        "Fira Sans",
+                        "Droid Sans",
+                        "Helvetica Neue",
+                        "sans-serif"
+                    ]
+                },
+                "h3": {
+                    "fontFamily": "-apple-system",
+                    "fontSize": "23px",
+                    "fontWeight": 600,
+                    "lineHeight": "28px",
+                    "letterSpacing": "0px",
+                    "fontFallbacks": [
+                        "-apple-system",
+                        "BlinkMacSystemFont",
+                        "Segoe UI",
+                        "Roboto",
+                        "Oxygen",
+                        "Ubuntu",
+                        "Cantarell",
+                        "Fira Sans",
+                        "Droid Sans",
+                        "Helvetica Neue",
+                        "sans-serif"
+                    ]
+                },
+                "h4": {
+                    "fontFamily": "-apple-system",
+                    "fontSize": "19px",
+                    "fontWeight": 600,
+                    "lineHeight": "23px",
+                    "letterSpacing": "0px",
+                    "fontFallbacks": [
+                        "-apple-system",
+                        "BlinkMacSystemFont",
+                        "Segoe UI",
+                        "Roboto",
+                        "Oxygen",
+                        "Ubuntu",
+                        "Cantarell",
+                        "Fira Sans",
+                        "Droid Sans",
+                        "Helvetica Neue",
+                        "sans-serif"
+                    ]
+                }
+            },
+            "p": {
+                "fontFamily": "-apple-system",
+                "fontSize": "16px",
+                "fontWeight": 400,
+                "lineHeight": "24px",
+                "letterSpacing": "0px",
+                "fontFallbacks": [
+                    "-apple-system",
+                    "BlinkMacSystemFont",
+                    "Segoe UI",
+                    "Roboto",
+                    "Oxygen",
+                    "Ubuntu",
+                    "Cantarell",
+                    "Fira Sans",
+                    "Droid Sans",
+                    "Helvetica Neue",
+                    "sans-serif"
+                ]
+            }
+        },
+        "elementSpacing": {
+            "xs": "8px",
+            "sm": "24px",
+            "md": "64px",
+            "lg": "112px",
+            "xl": "128px"
+        },
+        "shadows": {
+            "sm": "none",
+            "md": "none",
+            "lg": "none",
+            "xl": "none",
+            "inner": "none"
+        },
+        "components": {
+            "button": {
+                "primary": {
+                    "backgroundColor": "#ef4343",
+                    "color": "#0f172a",
+                    "borderColor": "transparent",
+                    "borderRadius": "4px",
+                    "borderWidth": "1px",
+                    "borderStyle": "solid",
+                    "padding": "8px 16px",
+                    "fontSize": "14px",
+                    "fontWeight": 500,
+                    "minWidth": "207px",
+                    "minHeight": "40px",
+                    "textDecoration": "none",
+                    "boxShadow": "none",
+                    "fontFallbacks": [
+                        "-apple-system",
+                        "BlinkMacSystemFont",
+                        "Segoe UI",
+                        "Roboto",
+                        "Oxygen",
+                        "Ubuntu",
+                        "Cantarell",
+                        "Fira Sans",
+                        "Droid Sans",
+                        "Helvetica Neue",
+                        "sans-serif"
+                    ],
+                    "fontFamily": "-apple-system",
+                    "css": "box-sizing: border-box; display: inline-block; min-width: 207px; min-height: 40px; background-color: #ef4343; color: #0f172a; border: 1px solid transparent; border-radius: 4px; padding: 8px 16px; font-size: 14px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\", sans-serif; text-decoration: none;"
+                },
+                "secondary": {
+                    "borderRadius": "4px",
+                    "borderWidth": "1px",
+                    "borderStyle": "solid",
+                    "padding": "8px 16px",
+                    "fontSize": "14px",
+                    "fontWeight": 500,
+                    "minWidth": "207px",
+                    "minHeight": "40px",
+                    "textDecoration": "none",
+                    "boxShadow": "none",
+                    "backgroundColor": "transparent",
+                    "color": "#0f172a",
+                    "borderColor": "#0f172a",
+                    "fontFallbacks": [
+                        "-apple-system",
+                        "BlinkMacSystemFont",
+                        "Segoe UI",
+                        "Roboto",
+                        "Oxygen",
+                        "Ubuntu",
+                        "Cantarell",
+                        "Fira Sans",
+                        "Droid Sans",
+                        "Helvetica Neue",
+                        "sans-serif"
+                    ],
+                    "fontFamily": "-apple-system",
+                    "css": "box-sizing: border-box; display: inline-block; min-width: 207px; min-height: 40px; background-color: transparent; color: #0f172a; border: 1px solid #0f172a; border-radius: 4px; padding: 8px 16px; font-size: 14px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\", sans-serif; text-decoration: none;"
+                },
+                "link": {
+                    "borderRadius": "0px",
+                    "borderWidth": "0px",
+                    "borderStyle": "none",
+                    "padding": "0px",
+                    "fontSize": "14px",
+                    "fontWeight": 400,
+                    "minWidth": "0px",
+                    "minHeight": "0px",
+                    "textDecoration": "underline",
+                    "boxShadow": "none",
+                    "backgroundColor": "transparent",
+                    "color": "#0f172a",
+                    "borderColor": "transparent",
+                    "fontFallbacks": [
+                        "-apple-system",
+                        "BlinkMacSystemFont",
+                        "Segoe UI",
+                        "Roboto",
+                        "Oxygen",
+                        "Ubuntu",
+                        "Cantarell",
+                        "Fira Sans",
+                        "Droid Sans",
+                        "Helvetica Neue",
+                        "sans-serif"
+                    ],
+                    "fontFamily": "-apple-system",
+                    "css": "color: #0f172a; font-size: 14px; font-weight: 400; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\", sans-serif; text-decoration: underline;"
+                }
+            },
+            "card": {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e5e7eb",
+                "borderRadius": "8px",
+                "borderWidth": "1px",
+                "borderStyle": "solid",
+                "padding": "16px",
+                "boxShadow": "none",
+                "textColor": "#0f172a",
+                "css": "background-color: #ffffff; color: #0f172a; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;"
+            }
+        },
+        "fontLinks": {
+            "Roboto": {
+                "type": "google",
+                "files": {
+                    "100": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbGmTggvWl0Qn.ttf",
+                    "200": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuZEbWmTggvWl0Qn.ttf",
+                    "300": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuaabWmTggvWl0Qn.ttf",
+                    "400": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmTggvWl0Qn.ttf",
+                    "500": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWub2bWmTggvWl0Qn.ttf",
+                    "600": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuYaammTggvWl0Qn.ttf",
+                    "700": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuYjammTggvWl0Qn.ttf",
+                    "800": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuZEammTggvWl0Qn.ttf",
+                    "900": "https://fonts.gstatic.com/s/roboto/v51/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuZtammTggvWl0Qn.ttf"
+                },
+                "category": "sans-serif"
+            },
+            "Oxygen": {
+                "type": "google",
+                "files": {
+                    "300": "https://fonts.gstatic.com/s/oxygen/v16/2sDcZG1Wl4LcnbuCJW8Db2-4C7wFZQ.ttf",
+                    "400": "https://fonts.gstatic.com/s/oxygen/v16/2sDfZG1Wl4Lcnbu6iUcnZ0SkAg.ttf",
+                    "700": "https://fonts.gstatic.com/s/oxygen/v16/2sDcZG1Wl4LcnbuCNWgDb2-4C7wFZQ.ttf"
+                },
+                "category": "sans-serif"
+            },
+            "Ubuntu": {
+                "type": "google",
+                "files": {
+                    "300": "https://fonts.gstatic.com/s/ubuntu/v21/4iCv6KVjbNBYlgoC1CzTt2aMH4V_gg.ttf",
+                    "400": "https://fonts.gstatic.com/s/ubuntu/v21/4iCs6KVjbNBYlgo6eAT3v02QFg.ttf",
+                    "500": "https://fonts.gstatic.com/s/ubuntu/v21/4iCv6KVjbNBYlgoCjC3Tt2aMH4V_gg.ttf",
+                    "700": "https://fonts.gstatic.com/s/ubuntu/v21/4iCv6KVjbNBYlgoCxCvTt2aMH4V_gg.ttf"
+                },
+                "category": "sans-serif"
+            },
+            "Cantarell": {
+                "type": "google",
+                "files": {
+                    "400": "https://fonts.gstatic.com/s/cantarell/v18/B50NF7ZDq37KMUvlO01Ji6hqHK-CLA.ttf",
+                    "700": "https://fonts.gstatic.com/s/cantarell/v18/B50IF7ZDq37KMUvlO01xN4dOFISeJY8GgQ.ttf"
+                },
+                "category": "sans-serif"
+            },
+            "Fira Sans": {
+                "type": "google",
+                "files": {
+                    "100": "https://fonts.gstatic.com/s/firasans/v18/va9C4kDNxMZdWfMOD5Vn9IjOazP3dUTP.ttf",
+                    "200": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnWKnuQR37fF3Wlg.ttf",
+                    "300": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnPKruQR37fF3Wlg.ttf",
+                    "400": "https://fonts.gstatic.com/s/firasans/v18/va9E4kDNxMZdWfMOD5VfkILKSTbndQ.ttf",
+                    "500": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnZKvuQR37fF3Wlg.ttf",
+                    "600": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnSKzuQR37fF3Wlg.ttf",
+                    "700": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnLK3uQR37fF3Wlg.ttf",
+                    "800": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnMK7uQR37fF3Wlg.ttf",
+                    "900": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnFK_uQR37fF3Wlg.ttf"
+                },
+                "category": "sans-serif"
+            }
+        }
+    },
+    "code": 200,
+    "key_metadata": {
+        "credits_consumed": 10,
+        "credits_remaining": 490
+    }
+}                                                                   

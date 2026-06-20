@@ -46,7 +46,7 @@ export function bootstrap(): void {
   const venvBin = join(cwd, ".venv", "bin");
   console.log(`Bootstrapping repository at ${cwd}\n`);
 
-  // 1. Create .agents/context folder
+  // Create .agents/context folder
   const agentsContext = join(cwd, ".agents", "context");
   if (!existsSync(agentsContext)) {
     console.log("Creating .agents/context/...");
@@ -55,28 +55,7 @@ export function bootstrap(): void {
     console.log(".agents/context/ already exists, skipping.");
   }
 
-  // 2. Set up Cicadas
-  console.log("\nSetting up Cicadas...");
-  run("uv venv .venv", "Creating virtual environment");
-  run(
-    `uv pip install --python ${join(venvBin, "python")} aprovan-cicadas`,
-    "Installing Cicadas",
-  );
-  run(`${join(venvBin, "cicadas")} init`, "Initializing Cicadas");
-
-  // 3. Symlink .cicadas -> .agents/context/cicadas
-  const cicadasLink = join(".agents", "context", "cicadas");
-  if (!existsSync(join(cwd, cicadasLink))) {
-    console.log("\nCreating symlinks...");
-    run(
-      `ln -s ../../.cicadas ${cicadasLink}`,
-      "Linking .cicadas -> .agents/context/cicadas",
-    );
-  } else {
-    console.log("\n.agents/context/cicadas symlink already exists, skipping.");
-  }
-
-  // 4. Skills discovery symlinks — all pointing to .multica/skills as the
+  // Skills discovery symlinks — all pointing to .multica/skills as the
   //    single source of truth. Each tool looks in its own directory:
   //      - Generic agents:  .agents/skills/
   //      - Claude Code:     .claude/skills/
