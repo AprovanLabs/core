@@ -1,16 +1,13 @@
 {
   "folders": [
     {
-      "path": "../projects",
+      "path": "../registry",
     },
     {
       "path": "../apprentice",
     },
     {
       "path": "../patchwork",
-    },
-    {
-      "path": "../registry",
     },
     {
       "path": "../stitchery",
@@ -23,14 +20,6 @@
     },
     {
       "path": "../zolvery",
-    },
-    {
-      "name": "memory",
-      "path": "../apprentice/.apprentice",
-    },
-    {
-      "name": "working",
-      "path": "../apprentice/.working",
     },
     {
       "path": "../cicadas",
@@ -55,12 +44,6 @@
     },
     {
       "path": "../formulast",
-    },
-    {
-      "path": "../copilot-proxy",
-    },
-    {
-      "path": "../claude-proxy",
     },
     {
       "path": "../publishing",

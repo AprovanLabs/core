@@ -110,7 +110,7 @@ function resolveStatePath(
 
   const langStateFiles = readdirSync(stateDir)
     .filter((f) => f.startsWith("state-") && f.endsWith(".json"))
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
 
   if (langStateFiles.length > 0) return join(stateDir, langStateFiles[0]!);
 
@@ -262,7 +262,6 @@ export function runDesloppifyScan(options: RunnerOptions): ScanResult {
         );
         results.push(result);
       } catch (err) {
-        console.error(`Error scanning package ${pkgRelPath}: ${String(err)}`);
         results.push({
           name: resolvePackageName(resolve(repoPath, pkgRelPath)),
           path: pkgRelPath,

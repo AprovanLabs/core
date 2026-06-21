@@ -5,7 +5,6 @@ This setup allows you to run OpenCode Web on one machine and access it securely 
 ## Prerequisites
 
 - Caddy (installed via `brew install caddy`)
-- claude-proxy built in `~/Documents/Code/AprovanLabs/claude-proxy`
 - OpenCode CLI installed
 
 ## Quick Start
@@ -29,11 +28,6 @@ function opencodeweb {
     [ -n "$proxy_pid" ] && kill $proxy_pid 2>/dev/null
   }
   trap cleanup EXIT
-
-  # Start Claude proxy
-  node ~/Documents/Code/AprovanLabs/claude-proxy/dist/cli.js serve --port $CLAUDE_PROXY_PORT &
-  proxy_pid=$!
-  sleep 1
 
   # Start OpenCode web (bound to localhost only)
   ANTHROPIC_API_KEY=dummy ANTHROPIC_BASE_URL=http://127.0.0.1:$CLAUDE_PROXY_PORT opencode web --hostname 127.0.0.1 --port $OPENCODE_PORT &

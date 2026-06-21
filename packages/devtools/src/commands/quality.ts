@@ -160,15 +160,13 @@ function makeScanCommand(): Command {
       const profile = opts.profile as ScanProfile;
 
       if (!["objective", "full", "ci"].includes(profile)) {
-        console.error(
+        throw new Error(
           `Invalid profile: ${profile}. Must be objective, full, or ci.`,
         );
-        process.exit(1);
       }
 
       if (!existsSync(scanPath)) {
-        console.error(`Path does not exist: ${scanPath}`);
-        process.exit(1);
+        throw new Error(`Path does not exist: ${scanPath}`);
       }
 
       let packages: string[] | undefined;
@@ -179,10 +177,9 @@ function makeScanCommand(): Command {
       if (opts.package) {
         const pkgPath = resolvePackagePath(scanPath, opts.package);
         if (!pkgPath) {
-          console.error(
+          throw new Error(
             `Package not found: ${opts.package}. Checked packages/, apps/, and root.`,
           );
-          process.exit(1);
         }
         // Derive relative path for the runner
         const rel = pkgPath.replace(scanPath, "").replace(/^\//, "");
@@ -257,18 +254,16 @@ function makeStatusCommand(): Command {
           timeout: 60_000,
         });
       } catch (err) {
-        console.error(
+        throw new Error(
           `Failed to run desloppify status: ${String(err)}`,
         );
-        process.exit(1);
       }
 
       let status: StatusOutput;
       try {
         status = JSON.parse(raw) as StatusOutput;
-      } catch {
-        console.error(`Failed to parse desloppify status output:\n${raw}`);
-        process.exit(1);
+      } catch (err) {
+        throw new Error(`Failed to parse desloppify status output:\n${raw}\n${String(err)}`);
       }
 
       if (!opts.json) {
@@ -278,10 +273,9 @@ function makeStatusCommand(): Command {
       console.log(JSON.stringify(status, null, 2));
 
       if (status.overall_score < threshold) {
-        console.error(
+        throw new Error(
           `\nQuality gate FAILED: overall score ${status.overall_score} is below threshold ${threshold}`,
         );
-        process.exit(1);
       }
     });
 }
@@ -326,18 +320,16 @@ function makeNextCommand(): Command {
           },
         );
       } catch (err) {
-        console.error(
+        throw new Error(
           `Failed to run desloppify next: ${String(err)}`,
         );
-        process.exit(1);
       }
 
       let items: NextItem[];
       try {
         items = JSON.parse(raw) as NextItem[];
-      } catch {
-        console.error(`Failed to parse desloppify next output:\n${raw}`);
-        process.exit(1);
+      } catch (err) {
+        throw new Error(`Failed to parse desloppify next output:\n${raw}\n${String(err)}`);
       }
 
       if (!opts.json) {

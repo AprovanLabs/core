@@ -21,6 +21,7 @@ export interface PackageResult {
     strict: number;
   };
   issues: DesloppifyIssue[];
+  /** Set when the package scan failed; score will be zeroed. */
   error?: string;
 }
 

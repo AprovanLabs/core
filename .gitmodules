@@ -1,0 +1,24 @@
+[submodule "repos/patchwork"]
+	path = repos/patchwork
+	url = https://github.com/AprovanLabs/patchwork.git
+[submodule "repos/apprentice"]
+	path = repos/apprentice
+	url = https://github.com/AprovanLabs/apprentice.git
+[submodule "repos/inaday"]
+	path = repos/inaday
+	url = https://github.com/AprovanLabs/inaday.git
+[submodule "repos/hardcopy"]
+	path = repos/hardcopy
+	url = https://github.com/AprovanLabs/hardcopy.git
+[submodule "repos/zolvery"]
+	path = repos/zolvery
+	url = https://github.com/AprovanLabs/zolvery.git
+[submodule "repos/core"]
+	path = repos/core
+	url = https://github.com/AprovanLabs/core.git
+[submodule "repos/aprovan.com"]
+	path = repos/aprovan.com
+	url = https://github.com/AprovanLabs/aprovan.com.git
+[submodule "repos/copilot-proxy"]
+	path = repos/copilot-proxy
+	url = https://github.com/AprovanLabs/copilot-proxy.git

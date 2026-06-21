@@ -72,15 +72,118 @@ devtools desloppify --repo . --profile ci --output desloppify-results.json
 
 **Creating Multica issues from findings:**
 
-Use the `desloppify-issues` skill (see `skills/desloppify-issues/`) to parse the JSON output and create structured Multica issues for T1/T2 findings.
+Use [`devtools create-issues`](#devtools-create-issues) to parse the JSON output and create structured Multica issues for T1/T2 findings.
 
-### `devtools git-refresh`
+### `devtools create-issues`
 
-Update git submodules and pull latest changes recursively.
+Reads a desloppify scan JSON output file and creates Multica child issues for T1 (critical) and T2 (high) findings. Findings are grouped by detector within each package to keep related issues together.
+
+```bash
+devtools create-issues --input <path> [options]
+```
+
+**Options:**
+
+| Flag | Description | Default |
+|---|---|---|
+| `--input <path>` | Path to desloppify scan JSON output file | *(required)* |
+| `--parent <issue-id>` | Parent Multica issue UUID (e.g. APR-65 / Code Quality Sentinel) | — |
+| `--project <project-id>` | Multica project UUID to assign issues to | — |
+| `--max-tier <number>` | Maximum tier to include (`1` = T1 only, `2` = T1+T2) | `2` |
+| `--dry-run` | Print what would be created without calling `multica` | `false` |
+
+**Examples:**
+
+```bash
+# Preview what issues would be created
+devtools create-issues --input desloppify-results.json --dry-run
+
+# Create issues as children of APR-65 (Code Quality Sentinel)
+devtools create-issues --input desloppify-results.json \
+  --parent 0d0853e2-b0e0-45ce-a52e-d30066fe2d1d \
+  --project 3fa22da9-5597-468e-87d9-089f96fdc7d8
+
+# T1 (critical) only
+devtools create-issues --input desloppify-results.json --max-tier 1
+```
+
+**Typical two-step workflow:**
+
+```bash
+# Step 1: scan
+devtools desloppify --repo . --profile ci --output desloppify-results.json
+
+# Step 2: create issues for T1/T2 findings
+devtools create-issues --input desloppify-results.json \
+  --parent <APR-65-uuid> --project <project-uuid>
+```
+
+### `devtools quality`
+
+Run desloppify quality scans with shared defaults and consistent output.
+
+**Subcommands:**
+
+#### `devtools quality scan`
+
+Scan a path for code quality issues.
+
+```bash
+devtools quality scan [--path <path>] [--profile ci|full|objective] [--package <name>] [--state <path>] [--json] [--no-badge]
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| `--path <path>` | Path to scan | cwd |
+| `--profile <profile>` | Scan profile: `ci`, `full`, or `objective` | `ci` |
+| `--package <name>` | Scan a single package by name (monorepo) | — |
+| `--state <path>` | State directory for isolation | — |
+| `--json` | Output results as JSON only | — |
+| `--no-badge` | Suppress badge output | — |
+
+#### `devtools quality status`
+
+Report quality status from desloppify state; exits non-zero if score is below threshold.
+
+```bash
+devtools quality status [--path <path>] [--state <path>] [--threshold <n>] [--json]
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| `--path <path>` | Path to scan/repo | cwd |
+| `--state <path>` | Path to desloppify state file or directory | — |
+| `--threshold <n>` | Minimum overall score required | `70` |
+| `--json` | Emit JSON only | — |
+
+#### `devtools quality next`
+
+List the next prioritized desloppify fix items as structured JSON.
+
+```bash
+devtools quality next [--path <path>] [--state <path>] [--count <n>] [--json]
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| `--path <path>` | Path to scan/repo | cwd |
+| `--state <path>` | Path to desloppify state file or directory | — |
+| `--count <n>` | Number of items to return | `10` |
+| `--json` | Emit JSON only | — |
 
 ### `devtools bootstrap`
 
 Set up a repo with Cicadas, agent context, and symlinks.
+
+## Development
+
+```bash
+pnpm build        # compile TypeScript via tsup
+pnpm dev          # watch mode
+pnpm test         # run vitest test suite
+pnpm typecheck    # type-check without emitting
+pnpm lint         # run ESLint
+```
 
 ## Programmatic API
 
@@ -95,3 +198,89 @@ const result = await runDesloppifyScan({
 
 console.log(result.packages[0].score);
 ```
+
+## CI Integration
+
+Wire desloppify into GitHub Actions with a score-threshold gate and optional Multica issue creation.
+
+### Basic CI gate (fail on score regression)
+
+```yaml
+# .github/workflows/desloppify.yml
+name: desloppify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run desloppify scan
+        run: |
+          pnpm exec devtools desloppify \
+            --repo . \
+            --profile ci \
+            --output desloppify-results.json
+
+      - name: Check score threshold
+        run: |
+          node -e "
+            const r = JSON.parse(require('fs').readFileSync('desloppify-results.json','utf8'));
+            const fail = r.packages.filter(p => p.score.objective < 70);
+            if (fail.length) {
+              console.error('Score below threshold in:', fail.map(p=>p.name).join(', '));
+              process.exit(1);
+            }
+          "
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desloppify-results
+          path: desloppify-results.json
+```
+
+### With Multica issue creation on merge to main
+
+Add a second job that runs only on `main` pushes to file Multica issues for any T1/T2 findings:
+
+```yaml
+      - name: Create Multica issues for T1/T2 findings
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          MULTICA_TOKEN: ${{ secrets.MULTICA_TOKEN }}
+        run: |
+          pnpm exec devtools create-issues \
+            --input desloppify-results.json \
+            --parent ${{ vars.APR_65_UUID }} \
+            --project ${{ vars.MULTICA_PROJECT_ID }}
+```
+
+> **Secrets / vars to configure:**
+> - `MULTICA_TOKEN` — API token for `multica` CLI authentication
+> - `APR_65_UUID` — UUID of the Code Quality Sentinel initiative (APR-65)
+> - `MULTICA_PROJECT_ID` — UUID of the target Multica project
+
+### Profile notes
+
+| Profile | Description |
+|---|---|
+| `objective` | Default; scores against objective mechanical rules only |
+| `ci` | Stricter thresholds; recommended for PR gates |
+| `full` | All rules including subjective checks; best for periodic scans |
