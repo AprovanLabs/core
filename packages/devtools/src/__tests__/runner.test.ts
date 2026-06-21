@@ -1,8 +1,13 @@
+import { execSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { parseStateFile, runDesloppifyScan } from "../desloppify/runner.js";
+
+vi.mock("node:child_process", () => ({
+  execSync: vi.fn(),
+}));
 
 describe("parseStateFile", () => {
   it("parses a valid state file", () => {
@@ -81,5 +86,55 @@ describe("runDesloppifyScan", () => {
         profile: "objective",
       }),
     ).toThrow(/does not exist/);
+  });
+});
+
+describe("runDesloppifyScan scan-loop error handling", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("sets error field when a package scan throws", () => {
+    vi.mocked(execSync).mockImplementation(() => {
+      throw new Error("desloppify command not found");
+    });
+
+    const repoDir = join(tmpdir(), `scan-error-test-${Date.now()}`);
+    const pkgDir = join(repoDir, "packages", "alpha");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      join(pkgDir, "package.json"),
+      JSON.stringify({ name: "@test/alpha" }),
+    );
+
+    const result = runDesloppifyScan({
+      repo: repoDir,
+      packages: ["packages/alpha"],
+    });
+
+    expect(result.packages).toHaveLength(1);
+    expect(result.packages[0]!.error).toContain("desloppify command not found");
+    expect(result.packages[0]!.issues).toEqual([]);
+  });
+
+  it("does not set error field on a successful scan with zero issues", () => {
+    vi.mocked(execSync).mockImplementation(() => Buffer.from(""));
+
+    const repoDir = join(tmpdir(), `scan-success-test-${Date.now()}`);
+    const pkgDir = join(repoDir, "packages", "beta");
+    mkdirSync(pkgDir, { recursive: true });
+    writeFileSync(
+      join(pkgDir, "package.json"),
+      JSON.stringify({ name: "@test/beta" }),
+    );
+
+    const result = runDesloppifyScan({
+      repo: repoDir,
+      packages: ["packages/beta"],
+    });
+
+    expect(result.packages).toHaveLength(1);
+    expect(result.packages[0]!.error).toBeUndefined();
+    expect(result.packages[0]!.issues).toEqual([]);
   });
 });
