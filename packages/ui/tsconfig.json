@@ -1,0 +1,9 @@
+{
+  "extends": "@aprovan/tsconfig/react.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

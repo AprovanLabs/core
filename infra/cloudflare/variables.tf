@@ -16,6 +16,16 @@ variable "domain" {
   default     = "internal.aprovan.app"
 }
 
+variable "aprovan_zone_id" {
+  description = "Cloudflare zone ID for aprovan.com"
+  type        = string
+}
+
+variable "cloudfront_distribution_domain" {
+  description = "CloudFront distribution hostname for aprovan.com"
+  type        = string
+}
+
 variable "email" {
   description = "Cloudflare email address"
   type        = string

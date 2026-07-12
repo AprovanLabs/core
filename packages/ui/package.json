@@ -1,0 +1,46 @@
+{
+  "name": "@aprovan/ui",
+  "version": "0.1.0",
+  "description": "Aprovan design tokens and React primitives",
+  "type": "module",
+  "sideEffects": [
+    "./dist/theme.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./theme.css": "./dist/theme.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup && cp src/theme.css dist/theme.css",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "radix-ui": "^1.4.2",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@aprovan/eslint-config": "workspace:*",
+    "@aprovan/tsconfig": "workspace:*",
+    "@types/react": "^19.1.8",
+    "eslint": "^9.31.0",
+    "react": "^19.1.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  }
+}

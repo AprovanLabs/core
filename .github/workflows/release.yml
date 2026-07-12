@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      id-token: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -24,8 +24,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
+          node-version: 22
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@aprovan'
 
       - name: Install dependencies
         run: pnpm install
@@ -42,4 +43,4 @@ jobs:
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
