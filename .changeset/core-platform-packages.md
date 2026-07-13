@@ -1,5 +1,5 @@
 ---
-"@aprovan/main": minor
+"@aprovan/node": minor
 "@aprovan/ui": minor
 ---
 

@@ -1,5 +1,5 @@
 import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
-import { parse } from "dotenv";
+import { parse } from "./dotenv";
 
 export const aprovanEnvParameterName = (environment = "prd"): string =>
   `/aprovan/${environment}/env`;

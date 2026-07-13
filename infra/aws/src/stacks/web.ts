@@ -1,3 +1,4 @@
+import { type Namer } from "@aprovan/cdk";
 import {
   CfnOutput,
   CfnParameter,
@@ -6,19 +7,33 @@ import {
   Stack,
   type StackProps,
 } from "aws-cdk-lib";
+import {
+  Certificate,
+  CertificateValidation,
+} from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import type { Construct } from "constructs";
-import type { GlobalStack } from "./glb.js";
 
 export interface WebStackProps extends StackProps {
-  global: GlobalStack;
+  names: Namer;
 }
 
 export class WebStack extends Stack {
+  readonly certificate: Certificate;
+
   constructor(scope: Construct, id: string, props: WebStackProps) {
     super(scope, id, props);
+    const { names } = props;
+
+    this.certificate = new Certificate(this, "Certificate", {
+      certificateName: names.global("aprovan-com"),
+      domainName: "aprovan.com",
+      subjectAlternativeNames: ["*.aprovan.com"],
+      validation: CertificateValidation.fromDns(),
+    });
+
     const gatewayDomain = new CfnParameter(this, "GatewayFunctionUrlDomain", {
       type: "String",
       description: "Gateway Lambda Function URL domain without a scheme",
@@ -53,7 +68,7 @@ function handler(event) {
     });
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       domainNames: ["aprovan.com"],
-      certificate: props.global.certificate,
+      certificate: this.certificate,
       minimumProtocolVersion:
         cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       defaultRootObject: "index.html",
@@ -75,6 +90,9 @@ function handler(event) {
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
       },
+    });
+    new CfnOutput(this, "CertificateArn", {
+      value: this.certificate.certificateArn,
     });
     new CfnOutput(this, "DistributionDomain", {
       value: distribution.distributionDomainName,
