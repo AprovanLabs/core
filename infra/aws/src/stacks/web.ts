@@ -1,7 +1,6 @@
 import { type Namer } from "@aprovan/cdk";
 import {
   CfnOutput,
-  CfnParameter,
   Duration,
   RemovalPolicy,
   Stack,
@@ -17,6 +16,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import type { Construct } from "constructs";
 
 export interface WebStackProps extends StackProps {
+  gatewayFunctionUrlDomain: string;
   names: Namer;
 }
 
@@ -25,7 +25,7 @@ export class WebStack extends Stack {
 
   constructor(scope: Construct, id: string, props: WebStackProps) {
     super(scope, id, props);
-    const { names } = props;
+    const { gatewayFunctionUrlDomain, names } = props;
 
     this.certificate = new Certificate(this, "Certificate", {
       certificateName: names.global("aprovan-com"),
@@ -34,10 +34,7 @@ export class WebStack extends Stack {
       validation: CertificateValidation.fromDns(),
     });
 
-    const gatewayDomain = new CfnParameter(this, "GatewayFunctionUrlDomain", {
-      type: "String",
-      description: "Gateway Lambda Function URL domain without a scheme",
-    });
+    const gatewayDomain = gatewayFunctionUrlDomain;
     const buckets = {
       root: this.siteBucket("Root"),
       registry: this.siteBucket("Registry"),
@@ -77,7 +74,7 @@ function handler(event) {
         "registry/*": staticBehavior(buckets.registry),
         "chat/*": staticBehavior(buckets.chat),
         "api/gateway/*": {
-          origin: new origins.HttpOrigin(gatewayDomain.valueAsString, {
+          origin: new origins.HttpOrigin(gatewayDomain, {
             protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
             readTimeout: Duration.seconds(60),
             keepaliveTimeout: Duration.seconds(60),
