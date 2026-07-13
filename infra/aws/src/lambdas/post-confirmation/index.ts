@@ -29,7 +29,7 @@ export async function handler(
   try {
     await database.send(
       new PutCommand({
-        TableName: env("USERS_TABLE"),
+        TableName: env("DYNAMODB_USERS_TABLE"),
         Item: { sub, email, createdAt },
         ConditionExpression: "attribute_not_exists(sub)",
       }),
@@ -41,7 +41,7 @@ export async function handler(
 
   const result = await database.send(
     new QueryCommand({
-      TableName: env("INVITES_TABLE"),
+      TableName: env("DYNAMODB_INVITES_TABLE"),
       IndexName: "ByEmailWorkspace",
       KeyConditionExpression: "email = :email",
       ExpressionAttributeValues: { ":email": email },
@@ -57,7 +57,7 @@ export async function handler(
   if (!invite) {
     await database.send(
       new PutCommand({
-        TableName: env("WORKSPACES_TABLE"),
+        TableName: env("DYNAMODB_WORKSPACES_TABLE"),
         Item: {
           workspaceId,
           name: `${email}'s workspace`,
@@ -71,10 +71,10 @@ export async function handler(
 
   await database.send(
     new PutCommand({
-      TableName: env("MEMBERSHIPS_TABLE"),
+      TableName: env("DYNAMODB_MEMBERSHIPS_TABLE"),
       Item: {
         workspaceId,
-        userSub: sub,
+        userId: sub,
         role:
           typeof invite?.["role"] === "string" ? invite["role"] : "admin",
         createdAt,
@@ -85,7 +85,7 @@ export async function handler(
   if (typeof invite?.["inviteToken"] === "string") {
     await database.send(
       new DeleteCommand({
-        TableName: env("INVITES_TABLE"),
+        TableName: env("DYNAMODB_INVITES_TABLE"),
         Key: { inviteToken: invite["inviteToken"] },
       }),
     );

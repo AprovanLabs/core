@@ -10,7 +10,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "synth": "cdk synth",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "deploy": "cdk deploy --all"
   },
   "dependencies": {
     "@aprovan/cdk": "workspace:*",

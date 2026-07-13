@@ -1,5 +1,5 @@
 import path from "node:path";
-import { type Namer } from "@aprovan/cdk";
+import { type Namer, namer } from "@aprovan/cdk";
 import {
   Duration,
   RemovalPolicy,
@@ -18,16 +18,16 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import type { Construct } from "constructs";
 
-export interface RegionalStackProps extends StackProps {
+export interface MainStackProps extends StackProps {
   environmentName: string;
   names: Namer;
 }
 
 /**
- * Single regional stack for an environment: identity tables, the Cognito user
+ * Single core stack for an environment: identity tables, the Cognito user
  * pool and its triggers, and the shared SSM environment parameter.
  */
-export class RegionalStack extends Stack {
+export class MainStack extends Stack {
   readonly users: Table;
   readonly workspaces: Table;
   readonly memberships: Table;
@@ -36,7 +36,7 @@ export class RegionalStack extends Stack {
   readonly client: cognito.UserPoolClient;
   readonly domain: cognito.UserPoolDomain;
 
-  constructor(scope: Construct, id: string, props: RegionalStackProps) {
+  constructor(scope: Construct, id: string, props: MainStackProps) {
     super(scope, id, props);
     const { names, environmentName } = props;
 
@@ -67,11 +67,11 @@ export class RegionalStack extends Stack {
       ...common,
       tableName: names.regional("memberships"),
       partitionKey: { name: "workspaceId", type: AttributeType.STRING },
-      sortKey: { name: "userSub", type: AttributeType.STRING },
+      sortKey: { name: "userId", type: AttributeType.STRING },
     });
     this.memberships.addGlobalSecondaryIndex({
-      indexName: "ByUserSub",
-      partitionKey: { name: "userSub", type: AttributeType.STRING },
+      indexName: "ByUserId",
+      partitionKey: { name: "userId", type: AttributeType.STRING },
       projectionType: ProjectionType.ALL,
     });
 
@@ -122,10 +122,10 @@ export class RegionalStack extends Stack {
       architecture: lambda.Architecture.ARM_64,
       timeout: Duration.seconds(10),
       environment: {
-        USERS_TABLE: this.users.tableName,
-        WORKSPACES_TABLE: this.workspaces.tableName,
-        MEMBERSHIPS_TABLE: this.memberships.tableName,
-        INVITES_TABLE: this.invites.tableName,
+        DYNAMODB_USERS_TABLE: this.users.tableName,
+        DYNAMODB_WORKSPACES_TABLE: this.workspaces.tableName,
+        DYNAMODB_MEMBERSHIPS_TABLE: this.memberships.tableName,
+        DYNAMODB_INVITES_TABLE: this.invites.tableName,
       },
     });
     for (const table of tables) {
@@ -191,6 +191,11 @@ export class RegionalStack extends Stack {
     const authority = `https://cognito-idp.${region}.amazonaws.com/${this.userPool.userPoolId}`;
     const cognitoDomain = `https://aprovan.auth.${region}.amazoncognito.com`;
     const values = [
+      `ORG=${namer().getOrg()}`,
+      `AWS_REGION=${namer().getRegion()}`,
+      `REGION=${namer().getRegion()}`,
+      `ENVIRONMENT=${namer().getEnvironment()}`,
+      `REGION_SHORT_CODE=${namer().getRegionShortCode()}`,
       `COGNITO_USER_POOL_ID=${this.userPool.userPoolId}`,
       `COGNITO_CLIENT_ID=${this.client.userPoolClientId}`,
       `COGNITO_AUTHORITY=${authority}`,
@@ -198,10 +203,10 @@ export class RegionalStack extends Stack {
       `GATEWAY_OIDC_ISSUER=${authority}`,
       `GATEWAY_OIDC_AUDIENCE=${this.client.userPoolClientId}`,
       "GATEWAY_URL=https://aprovan.com/api/gateway",
-      `USERS_TABLE=${this.users.tableName}`,
-      `WORKSPACES_TABLE=${this.workspaces.tableName}`,
-      `MEMBERSHIPS_TABLE=${this.memberships.tableName}`,
-      `INVITES_TABLE=${this.invites.tableName}`,
+      `DYNAMODB_USERS_TABLE=${this.users.tableName}`,
+      `DYNAMODB_WORKSPACES_TABLE=${this.workspaces.tableName}`,
+      `DYNAMODB_MEMBERSHIPS_TABLE=${this.memberships.tableName}`,
+      `DYNAMODB_INVITES_TABLE=${this.invites.tableName}`,
     ].join("\n");
 
     new StringParameter(this, "AprovanEnvironment", {
