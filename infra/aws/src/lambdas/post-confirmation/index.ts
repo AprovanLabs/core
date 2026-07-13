@@ -31,7 +31,9 @@ export async function handler(
       new PutCommand({
         TableName: env("DYNAMODB_USERS_TABLE"),
         Item: { sub, email, createdAt },
-        ConditionExpression: "attribute_not_exists(sub)",
+        // `sub` is a DynamoDB reserved word; alias it via ExpressionAttributeNames.
+        ConditionExpression: "attribute_not_exists(#sub)",
+        ExpressionAttributeNames: { "#sub": "sub" },
       }),
     );
   } catch (error) {

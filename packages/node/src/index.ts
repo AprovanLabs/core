@@ -1,5 +1,5 @@
 import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
-import { parse } from "./dotenv";
+import * as dotenv from './dotenv';
 
 export const aprovanEnvParameterName = (environment = "prd"): string =>
   `/aprovan/${environment}/env`;
@@ -23,7 +23,7 @@ export async function getAprovanEnv(
   if (raw === undefined) {
     throw new Error(`Aprovan environment parameter ${environment} has no value`);
   }
-  return { raw, values: parse(raw) };
+  return { raw, values: dotenv.parse(raw) };
 }
 
 export async function loadAprovanEnv(
@@ -38,3 +38,5 @@ export async function loadAprovanEnv(
   }
   return values;
 }
+
+export { dotenv };

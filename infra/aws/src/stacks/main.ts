@@ -157,6 +157,9 @@ export class MainStack extends Stack {
       "http://localhost:3000/auth/callback",
       "http://localhost:4000/auth/callback",
       "http://127.0.0.1:8400/callback",
+      // Patchwork
+      "http://localhost:5173/auth/callback",
+      "http://localhost:5173/chat/auth/callback",
     ];
     this.client = this.userPool.addClient("PublicClient", {
       userPoolClientName: names.regional("public-client"),
@@ -173,6 +176,7 @@ export class MainStack extends Stack {
           "https://aprovan.com/registry",
           "https://aprovan.com/chat",
           "http://localhost",
+          "http://localhost:5173/chat",
         ],
       },
       supportedIdentityProviders: [
