@@ -23,6 +23,7 @@ new MainStack(app, names.regional(), { env, environmentName, names });
 
 new WebStack(app, names.global("web"), {
   env: { account, region: "us-east-1" },
+  certificateArn: process.env['CERTIFICATE_ARN']!,
   gatewayFunctionUrlDomain: gatewayDomainFromContext(app),
   names,
 });
