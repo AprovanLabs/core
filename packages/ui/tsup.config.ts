@@ -5,6 +5,7 @@ export default defineConfig({
     index: "src/index.tsx",
     "auth/index": "src/auth/index.ts",
     "gateway/index": "src/gateway/index.ts",
+    "shell/index": "src/shell/index.tsx",
   },
   format: ["esm"],
   dts: true,

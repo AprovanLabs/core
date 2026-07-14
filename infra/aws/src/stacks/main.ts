@@ -158,8 +158,10 @@ export class MainStack extends Stack {
       "http://127.0.0.1:8400/callback",
       // Patchwork
       "http://localhost:5173/auth/callback",
+      "https://patchwork.com/chat/auth/callback",
       // Registry
       "http://localhost:4321/auth/callback",
+      "https://aprovan.com/registry/auth/callback",
     ];
     this.client = this.userPool.addClient("PublicClient", {
       userPoolClientName: names.regional("public-client"),
