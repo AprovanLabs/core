@@ -183,7 +183,7 @@ const populate = (
 };
 
 const getDotenvKey = (options?: DotenvOptions): string =>
-  options?.DOTENV_KEY || process.env.DOTENV_KEY || '';
+  options?.DOTENV_KEY || process.env['DOTENV_KEY'] || '';
 
 const findVaultPath = (options?: DotenvOptions): string | null => {
   const toVaultPath = (p: string): string =>
@@ -282,9 +282,11 @@ const parseVault = (options: DotenvOptions): EnvRecord => {
 
 const configVault = (options: DotenvOptions): DotenvResult => {
   const showDebug = parseBoolean(
-    process.env.DOTENV_CONFIG_DEBUG ?? options.debug,
+    process.env['DOTENV_CONFIG_DEBUG'] ?? options.debug,
   );
-  const quiet = parseBoolean(process.env.DOTENV_CONFIG_QUIET ?? options.quiet);
+  const quiet = parseBoolean(
+    process.env['DOTENV_CONFIG_QUIET'] ?? options.quiet,
+  );
 
   if (showDebug || !quiet) {
     log('Loading env from encrypted .env.vault');
@@ -301,10 +303,10 @@ const configDotenv = (options?: DotenvOptions): DotenvResult => {
   const target = options?.processEnv ?? process.env;
   const encoding: BufferEncoding = options?.encoding ?? 'utf8';
   let showDebug = parseBoolean(
-    target.DOTENV_CONFIG_DEBUG ?? options?.debug ?? false,
+    target['DOTENV_CONFIG_DEBUG'] ?? options?.debug ?? false,
   );
   let quiet = parseBoolean(
-    target.DOTENV_CONFIG_QUIET ?? options?.quiet ?? false,
+    target['DOTENV_CONFIG_QUIET'] ?? options?.quiet ?? false,
   );
 
   const defaultPath = path.resolve(process.cwd(), '.env');
@@ -332,8 +334,8 @@ const configDotenv = (options?: DotenvOptions): DotenvResult => {
   const populated = populate(target, parsedAll, options);
 
   // Re-check settings from loaded .env
-  showDebug = parseBoolean(target.DOTENV_CONFIG_DEBUG ?? showDebug);
-  quiet = parseBoolean(target.DOTENV_CONFIG_QUIET ?? quiet);
+  showDebug = parseBoolean(target['DOTENV_CONFIG_DEBUG'] ?? showDebug);
+  quiet = parseBoolean(target['DOTENV_CONFIG_QUIET'] ?? quiet);
 
   if (showDebug || !quiet) {
     const count = Object.keys(populated).length;
