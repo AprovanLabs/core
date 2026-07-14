@@ -151,15 +151,15 @@ export class MainStack extends Stack {
     }
 
     const callbackUrls = [
-      "https://aprovan.com/registry/auth/callback",
-      "https://aprovan.com/chat/auth/callback",
+      "https://aprovan.com/auth/callback",
       "http://localhost",
       "http://localhost:3000/auth/callback",
       "http://localhost:4000/auth/callback",
       "http://127.0.0.1:8400/callback",
       // Patchwork
       "http://localhost:5173/auth/callback",
-      "http://localhost:5173/chat/auth/callback",
+      // Registry
+      "http://localhost:4321/auth/callback",
     ];
     this.client = this.userPool.addClient("PublicClient", {
       userPoolClientName: names.regional("public-client"),
