@@ -1,5 +1,6 @@
 export {
   createGatewayClient,
+  DEFAULT_AUTH_HEADER,
   GatewayError,
   saveStoredSession,
   loadStoredSession,

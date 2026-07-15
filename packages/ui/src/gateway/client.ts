@@ -39,11 +39,24 @@ type TokenSource = () =>
   | undefined
   | Promise<string | null | undefined>;
 
+/**
+ * Header carrying the caller's bearer token. Deliberately NOT `Authorization`:
+ * the gateway sits behind CloudFront with Origin Access Control, whose SigV4
+ * signing overwrites the standard `Authorization` header with its own
+ * signature. The user token rides in this app-specific header instead, which
+ * CloudFront forwards untouched. The gateway reads it (falling back to
+ * `Authorization` for direct/dev access). The token is opaque here — this is a
+ * transport concern, independent of which identity provider minted it.
+ */
+export const DEFAULT_AUTH_HEADER = "X-Aprovan-Authorization";
+
 export interface GatewayClientConfig {
   /** Gateway base URL, e.g. `http://localhost:4000` or `/gateway`. */
   baseUrl: string;
-  /** Supplies the current Cognito access token (sync or async). */
+  /** Supplies the current access token (sync or async). */
   getToken: TokenSource;
+  /** Header carrying the bearer token. Default: {@link DEFAULT_AUTH_HEADER}. */
+  authHeader?: string;
   /** Header used to pin the active workspace per request. Default: `X-Aprovan-Workspace`. */
   workspaceHeader?: string;
 }
@@ -76,6 +89,7 @@ async function parseError(res: Response): Promise<GatewayError> {
 
 export function createGatewayClient(config: GatewayClientConfig): GatewayClient {
   const base = config.baseUrl.replace(/\/$/, "");
+  const authHeader = config.authHeader ?? DEFAULT_AUTH_HEADER;
   const workspaceHeader = config.workspaceHeader ?? "X-Aprovan-Workspace";
 
   async function request<T>(
@@ -85,7 +99,7 @@ export function createGatewayClient(config: GatewayClientConfig): GatewayClient 
     const { headers, workspaceId, ...init } = options;
     const token = await config.getToken();
     const merged: Record<string, string> = { ...headers };
-    if (token) merged["Authorization"] = `Bearer ${token}`;
+    if (token) merged[authHeader] = `Bearer ${token}`;
     if (workspaceId) merged[workspaceHeader] = workspaceId;
 
     const res = await fetch(`${base}${path}`, { ...init, headers: merged });

@@ -10,9 +10,11 @@ import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import type { Construct } from "constructs";
 
 export interface WebStackProps extends StackProps {
+  environmentName: string;
   gatewayFunctionUrlDomain: string;
   certificateArn: string;
   names: Namer;
@@ -21,7 +23,8 @@ export interface WebStackProps extends StackProps {
 export class WebStack extends Stack {
   constructor(scope: Construct, id: string, props: WebStackProps) {
     super(scope, id, props);
-    const { certificateArn, gatewayFunctionUrlDomain, names } = props;
+    const { certificateArn, environmentName, gatewayFunctionUrlDomain, names } =
+      props;
 
     const certificate = Certificate.fromCertificateArn(
       this,
@@ -49,6 +52,20 @@ function handler(event) {
 }`),
     });
 
+    // SigV4-signs CloudFront's requests to the gateway Lambda Function URL so
+    // the IAM-protected URL accepts them (unsigned public invocation is blocked
+    // org-wide). Origin type "lambda" tells CloudFront to sign for the Lambda
+    // service; the Lambda grants cloudfront.amazonaws.com invoke in the registry
+    // repo's gateway stack.
+    const gatewayOac = new cloudfront.CfnOriginAccessControl(this, "GatewayOac", {
+      originAccessControlConfig: {
+        name: names.global("gateway-oac"),
+        originAccessControlOriginType: "lambda",
+        signingBehavior: "always",
+        signingProtocol: "sigv4",
+      },
+    });
+
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       domainNames: ["aprovan.com"],
       certificate,
@@ -68,10 +85,18 @@ function handler(event) {
       },
       additionalBehaviors: {
         "api/gateway/*": {
+          // Plain HttpOrigin to the gateway Function URL, with the lambda OAC
+          // attached so CloudFront SigV4-signs each request. We can't use
+          // `FunctionUrlOrigin.withOriginAccessControl` (which wants a live
+          // IFunctionUrl and adds the invoke permission here) because the
+          // gateway Lambda lives in another repo/region — we only have its
+          // domain string. The invoke permission is granted on the Lambda in
+          // the registry repo's gateway stack.
           origin: new origins.HttpOrigin(gatewayFunctionUrlDomain, {
             protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
             readTimeout: Duration.seconds(60),
             keepaliveTimeout: Duration.seconds(60),
+            originAccessControlId: gatewayOac.attrId,
           }),
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
@@ -89,6 +114,23 @@ function handler(event) {
     new CfnOutput(this, "DistributionDomain", {
       value: distribution.distributionDomainName,
     });
+    new CfnOutput(this, "DistributionId", {
+      value: distribution.distributionId,
+    });
     new CfnOutput(this, "BucketName", { value: bucket.bucketName });
+
+    // Cross-repo discovery contract: sibling projects (e.g. the registry) that
+    // sync static assets into this bucket read these to find the deploy target
+    // instead of hardcoding ids. Parameters live in this stack's region.
+    new StringParameter(this, "WebBucketParam", {
+      parameterName: `/aprovan/${environmentName}/web/bucket`,
+      description: `Aprovan ${environmentName} shared web bucket name`,
+      stringValue: bucket.bucketName,
+    });
+    new StringParameter(this, "WebDistributionIdParam", {
+      parameterName: `/aprovan/${environmentName}/web/distribution-id`,
+      description: `Aprovan ${environmentName} aprovan.com CloudFront distribution id`,
+      stringValue: distribution.distributionId,
+    });
   }
 }
