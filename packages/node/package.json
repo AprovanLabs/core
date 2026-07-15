@@ -1,6 +1,6 @@
 {
   "name": "@aprovan/node",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Shared Aprovan environment loading and utilities",
   "type": "module",
   "bin": {
