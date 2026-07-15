@@ -6,16 +6,6 @@ import { CiStack } from "./stacks/ci.js";
 import { MainStack } from "./stacks/main.js";
 import { WebStack } from "./stacks/web.js";
 
-function gatewayDomainFromContext(app: cdk.App): string {
-  const value = app.node.tryGetContext("gatewayFunctionUrlDomain");
-  if (typeof value !== "string" || !value) {
-    throw new Error(
-      "cdk.json context.gatewayFunctionUrlDomain is required to deploy the web stack",
-    );
-  }
-  return value.replace(/^https?:\/\//, "").replace(/\/$/, "");
-}
-
 const app = new cdk.App();
 const { environmentName, account, env } = resolveEnv();
 const names = namer({ environment: environmentName, region: env.region });
@@ -25,8 +15,6 @@ new MainStack(app, names.regional(), { env, environmentName, names });
 new WebStack(app, names.global("web"), {
   env: { account, region: "us-east-1" },
   environmentName,
-  certificateArn: process.env['CERTIFICATE_ARN']!,
-  gatewayFunctionUrlDomain: gatewayDomainFromContext(app),
   names,
 });
 

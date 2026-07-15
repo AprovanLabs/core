@@ -2,7 +2,6 @@
   "app": "node --enable-source-maps dist/app.js",
   "context": {
     "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
-    "@aws-cdk/core:defaultCrossStackReferences": "weak",
-    "gatewayFunctionUrlDomain": "6uh6kd3yyfxhqddd4djj2ozu7q0ffrjc.lambda-url.us-east-2.on.aws"
+    "@aws-cdk/core:defaultCrossStackReferences": "weak"
   }
 }

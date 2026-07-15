@@ -1,6 +1,8 @@
-name: Publish packages
+name: Publish Packages to NPM
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 env:
@@ -14,7 +16,8 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -29,9 +32,14 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: pnpm run build
+        run: pnpm --filter @aprovan/cdk --filter @aprovan/node --filter @aprovan/ui build
+
+      - name: Append dev SHA to versions
+        run: |
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          pnpm --filter @aprovan/cdk --filter @aprovan/node --filter @aprovan/ui exec -- sh -c 'npm pkg set version="$(npm pkg get version | tr -d \")-dev.'"$SHORT_SHA"'"'
 
       - name: Publish packages
-        run: pnpm --filter @aprovan/cdk --filter @aprovan/node --filter @aprovan/ui publish --no-git-checks --access public
+        run: pnpm --filter @aprovan/cdk --filter @aprovan/node --filter @aprovan/ui publish --no-git-checks --access public --tag dev
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
