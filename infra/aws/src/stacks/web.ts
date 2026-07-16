@@ -1,4 +1,4 @@
-import { namer, type Namer } from "@aprovan/cdk";
+import { type Namer } from "@aprovan/cdk";
 import {
   CfnOutput,
   Duration,
@@ -15,20 +15,19 @@ import type { Construct } from "constructs";
 
 export interface WebStackProps extends StackProps {
   environmentName: string;
+  gatewayFunctionUrlDomain: string;
   names: Namer;
 }
 
 export class WebStack extends Stack {
   constructor(scope: Construct, id: string, props: WebStackProps) {
     super(scope, id, props);
-    const { environmentName, names } = props;
+    const { environmentName, gatewayFunctionUrlDomain, names } = props;
 
     const certificateArn = StringParameter.valueForStringParameter(
       this,
       `/aprovan/${environmentName}/web/certificate-arn`
     );
-
-    const gatewayFunctionUrlDomain = `registry-${namer().getEnvironment()}-use2-gateway`
 
     const certificate = Certificate.fromCertificateArn(
       this,

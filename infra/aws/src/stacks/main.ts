@@ -13,9 +13,14 @@ import {
   ProjectionType,
   Table,
 } from "aws-cdk-lib/aws-dynamodb";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
-import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import {
+  AwsCustomResource,
+  AwsCustomResourcePolicy,
+  PhysicalResourceId,
+} from "aws-cdk-lib/custom-resources";
 import type { Construct } from "constructs";
 
 export interface MainStackProps extends StackProps {
@@ -158,7 +163,9 @@ export class MainStack extends Stack {
       "http://127.0.0.1:8400/callback",
       // Patchwork
       "http://localhost:5173/auth/callback",
+      "http://localhost:5173/chat/auth/callback",
       "https://patchwork.com/chat/auth/callback",
+      "https://aprovan.com/chat/auth/callback",
       // Registry
       "http://localhost:4321/auth/callback",
       "https://aprovan.com/registry/auth/callback",
@@ -215,10 +222,38 @@ export class MainStack extends Stack {
       `DYNAMODB_INVITES_TABLE=${this.invites.tableName}`,
     ].join("\n");
 
-    new StringParameter(this, "AprovanEnvironment", {
-      parameterName: `/aprovan/${environmentName}/env`,
-      description: `Aprovan ${environmentName} shared environment`,
-      stringValue: values,
+    const envParameterName = `/aprovan/${environmentName}/env`;
+    const putEnvironmentParameter = {
+      service: "SSM" as const,
+      action: "putParameter" as const,
+      parameters: {
+        Name: envParameterName,
+        Description: `Aprovan ${environmentName} shared environment`,
+        Type: "String",
+        Value: values,
+        Overwrite: true,
+      },
+      physicalResourceId: PhysicalResourceId.of(envParameterName),
+    };
+
+    new AwsCustomResource(this, "AprovanEnvironment", {
+      onCreate: putEnvironmentParameter,
+      onUpdate: putEnvironmentParameter,
+      onDelete: {
+        service: "SSM",
+        action: "deleteParameter",
+        parameters: {
+          Name: envParameterName,
+        },
+      },
+      policy: AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          actions: ["ssm:PutParameter", "ssm:DeleteParameter"],
+          resources: [
+            `arn:aws:ssm:${region}:${this.account}:parameter/aprovan/${environmentName}/env`,
+          ],
+        }),
+      ]),
     });
   }
 }
