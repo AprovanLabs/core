@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import { type Namer } from "@aprovan/cdk";
 import {
   CfnOutput,
@@ -9,6 +10,8 @@ import {
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import type { Construct } from "constructs";
@@ -60,6 +63,20 @@ function handler(event) {
     // org-wide). Origin type "lambda" tells CloudFront to sign for the Lambda
     // service; the Lambda grants cloudfront.amazonaws.com invoke in the registry
     // repo's gateway stack.
+    // OAC signs whatever `x-amz-content-sha256` a request carries but never
+    // hashes bodies itself, so bodied requests from clients we don't control
+    // (MCP clients POSTing JSON-RPC) fail signature validation. This edge
+    // function fills the header in from the body before OAC signs. Must be
+    // x86_64 + env-free (Lambda@Edge), and this stack is already us-east-1.
+    const oacBodyHash = new NodejsFunction(this, "OacBodyHash", {
+      entry: path.join(process.cwd(), "src/lambdas/oac-body-hash/index.ts"),
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_22_X,
+      architecture: lambda.Architecture.X86_64,
+      memorySize: 128,
+      timeout: Duration.seconds(5),
+    });
+
     const gatewayOac = new cloudfront.CfnOriginAccessControl(this, "GatewayOac", {
       originAccessControlConfig: {
         name: names.global("gateway-oac"),
@@ -103,6 +120,13 @@ function handler(event) {
           }),
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          edgeLambdas: [
+            {
+              functionVersion: oacBodyHash.currentVersion,
+              eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
+              includeBody: true,
+            },
+          ],
           originRequestPolicy:
             cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
           viewerProtocolPolicy:
