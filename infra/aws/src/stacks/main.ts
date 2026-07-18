@@ -236,7 +236,12 @@ export class MainStack extends Stack {
       physicalResourceId: PhysicalResourceId.of(envParameterName),
     };
 
-    new AwsCustomResource(this, "AprovanEnvironment", {
+    // "AprovanEnvironmentWriter" (not "AprovanEnvironment"): the previous
+    // deploy managed this parameter as an AWS::SSM::Parameter under that id,
+    // and CloudFormation forbids changing a logical resource's type in place.
+    // The old resource carries DeletionPolicy: Retain, so replacing it leaves
+    // the live parameter for this writer to overwrite.
+    new AwsCustomResource(this, "AprovanEnvironmentWriter", {
       onCreate: putEnvironmentParameter,
       onUpdate: putEnvironmentParameter,
       onDelete: {
