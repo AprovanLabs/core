@@ -34,12 +34,29 @@ jobs:
       - name: Build packages
         run: pnpm --filter @aprovan/cdk --filter @aprovan/node --filter @aprovan/ui build
 
+      # Stable release: any package whose package.json version is not yet on
+      # npm gets published as `latest`. Bumping a version and pushing to main
+      # is the whole release flow.
+      - name: Publish new stable versions
+        run: |
+          for pkg in @aprovan/cdk @aprovan/node @aprovan/ui; do
+            version=$(pnpm --filter "$pkg" exec npm pkg get version | tr -d '"')
+            if npm view "$pkg@$version" version >/dev/null 2>&1; then
+              echo "$pkg@$version already published; skipping"
+            else
+              echo "Publishing $pkg@$version as latest"
+              pnpm --filter "$pkg" publish --no-git-checks --access public
+            fi
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Append dev SHA to versions
         run: |
           SHORT_SHA=$(git rev-parse --short=7 HEAD)
           pnpm --filter @aprovan/cdk --filter @aprovan/node --filter @aprovan/ui exec -- sh -c 'npm pkg set version="$(npm pkg get version | tr -d \")-dev.'"$SHORT_SHA"'"'
 
-      - name: Publish packages
+      - name: Publish dev builds
         run: pnpm --filter @aprovan/cdk --filter @aprovan/node --filter @aprovan/ui publish --no-git-checks --access public --tag dev
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
