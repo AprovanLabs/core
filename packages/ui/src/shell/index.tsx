@@ -81,6 +81,152 @@ const dropdownItemClass =
   "flex w-full cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-2 text-sm outline-none data-[highlighted]:bg-muted";
 
 // ---------------------------------------------------------------------------
+// AppHeader
+// ---------------------------------------------------------------------------
+
+export interface AppNavLink {
+  label: string;
+  href: string;
+  /** Highlight as the app the user is currently in. */
+  current?: boolean;
+  /** Open in a new tab (external targets). */
+  external?: boolean;
+}
+
+/**
+ * The Aprovan app family. Every Aprovan web surface links to the others
+ * through these — pass to {@link AppHeader} (mark the current one) so users
+ * can hop between the home page, chat, and registry from any of them.
+ */
+export const APROVAN_APPS: AppNavLink[] = [
+  { label: "Home", href: "https://aprovan.com/" },
+  { label: "Chat", href: "https://aprovan.com/chat/" },
+  { label: "Registry", href: "https://aprovan.com/registry/" },
+];
+
+function MenuIcon({ className }: { className?: string }): React.ReactElement {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+export interface AppHeaderProps {
+  /** Brand mark (logo image / svg). */
+  logo?: React.ReactNode;
+  /** Wordmark next to the logo. Default "aprovan". */
+  name?: string;
+  /** Where the brand links to. Default "/". */
+  homeHref?: string;
+  /**
+   * Primary navigation. On small screens the links collapse into a menu.
+   * Use {@link APROVAN_APPS} (with `current` set) for the shared app family.
+   */
+  links?: AppNavLink[];
+  /** Right-hand side content — typically a {@link SessionArea}. */
+  children?: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * Shared top bar for Aprovan web apps: brand on the left, app navigation in
+ * the middle (collapsing to a menu on small screens), session controls on the
+ * right. Sticky by default; style overrides via `className`.
+ */
+export function AppHeader({
+  logo,
+  name = "aprovan",
+  homeHref = "/",
+  links = [],
+  children,
+  className,
+}: AppHeaderProps): React.ReactElement {
+  const navLinkClass = (link: AppNavLink) =>
+    cn(
+      "rounded-md px-2.5 py-1.5 text-sm transition-colors hover:bg-muted hover:text-foreground",
+      link.current ? "font-medium text-foreground" : "text-muted-foreground",
+    );
+
+  return (
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b bg-background/90 backdrop-blur",
+        className,
+      )}
+      data-slot="app-header"
+    >
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:px-4">
+        <a className="flex shrink-0 items-center gap-2" href={homeHref}>
+          {logo}
+          <span className="text-base font-semibold tracking-tight">{name}</span>
+        </a>
+
+        {links.length > 0 && (
+          <>
+            <nav className="ml-4 hidden items-center gap-1 sm:flex">
+              {links.map((link) => (
+                <a
+                  className={navLinkClass(link)}
+                  href={link.href}
+                  key={link.href}
+                  {...(link.external
+                    ? { target: "_blank", rel: "noreferrer" }
+                    : {})}
+                  {...(link.current ? { "aria-current": "page" } : {})}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger
+                aria-label="Navigation menu"
+                className="ml-1 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:hidden"
+              >
+                <MenuIcon className="size-4" />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  align="start"
+                  className={dropdownContentClass}
+                  sideOffset={6}
+                >
+                  {links.map((link) => (
+                    <DropdownMenu.Item asChild className={dropdownItemClass} key={link.href}>
+                      <a
+                        href={link.href}
+                        {...(link.external
+                          ? { target: "_blank", rel: "noreferrer" }
+                          : {})}
+                      >
+                        {link.label}
+                        {link.current && <CheckIcon className="ml-auto size-3.5" />}
+                      </a>
+                    </DropdownMenu.Item>
+                  ))}
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </>
+        )}
+
+        <div className="ml-auto flex items-center gap-2">{children}</div>
+      </div>
+    </header>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // WorkspaceSwitcher
 // ---------------------------------------------------------------------------
 
