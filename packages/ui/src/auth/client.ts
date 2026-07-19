@@ -139,6 +139,36 @@ export function createAuthClient(config: AuthConfig): AuthClient {
   manager.events.addUserLoaded((u) => mirrorToken(u.access_token ?? null));
   manager.events.addUserUnloaded(() => mirrorToken(null));
 
+  /**
+   * Load the stored user, refreshing via the stored refresh token when the
+   * access token has expired (e.g. a returning visitor after the ~1h access
+   * token lifetime). The refresh token stays valid for 30 days, so sessions
+   * survive until then without re-login. Concurrent callers share one renewal.
+   */
+  let renewal: Promise<User | null> | null = null;
+  const loadUser = async (): Promise<User | null> => {
+    const user = await manager.getUser();
+    if (!user) return null;
+    if (!user.expired) return user;
+    if (!user.refresh_token) {
+      mirrorToken(null);
+      return null;
+    }
+    renewal ??= manager
+      .signinSilent()
+      .catch(async () => {
+        // Refresh token expired/revoked — drop the stale session.
+        await manager.removeUser().catch(() => {});
+        return null;
+      })
+      .finally(() => {
+        renewal = null;
+      });
+    const renewed = await renewal;
+    mirrorToken(renewed?.access_token ?? null);
+    return renewed;
+  };
+
   return {
     isConfigured: true,
     manager,
@@ -180,7 +210,7 @@ export function createAuthClient(config: AuthConfig): AuthClient {
     },
 
     async getUser(): Promise<AuthUser | null> {
-      const user = await manager.getUser();
+      const user = await loadUser();
       // Refresh the mirror on load so sync callers see a live token even when
       // no `userLoaded` event fired (e.g. a returning session after reload).
       mirrorToken(user && !user.expired ? (user.access_token ?? null) : null);
@@ -188,7 +218,7 @@ export function createAuthClient(config: AuthConfig): AuthClient {
     },
 
     async getAccessToken(): Promise<string | null> {
-      const user = await manager.getUser();
+      const user = await loadUser();
       const token = user && !user.expired ? (user.access_token ?? null) : null;
       mirrorToken(token);
       return token;

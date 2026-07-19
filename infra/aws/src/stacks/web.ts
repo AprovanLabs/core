@@ -77,6 +77,32 @@ function handler(event) {
       timeout: Duration.seconds(5),
     });
 
+    // The origin request policy swaps Host for the Lambda URL domain, so the
+    // gateway builds public URLs (MCP resource metadata, WWW-Authenticate)
+    // from X-Forwarded-Host — set here from the viewer's Host.
+    const forwardHost = new cloudfront.Function(this, "GatewayForwardHost", {
+      runtime: cloudfront.FunctionRuntime.JS_2_0,
+      code: cloudfront.FunctionCode.fromInline(`
+function handler(event) {
+  var request = event.request;
+  request.headers["x-forwarded-host"] = { value: request.headers.host.value };
+  return request;
+}`),
+    });
+
+    // Lambda Function URLs remap WWW-Authenticate to
+    // x-amzn-remapped-www-authenticate; restore it so OAuth-aware MCP clients
+    // see the RFC 9728 resource_metadata challenge. Must be Lambda@Edge at
+    // origin response — CloudFront skips viewer-response functions on 4xx/5xx.
+    const restoreAuthHeader = new NodejsFunction(this, "RestoreAuthHeader", {
+      entry: path.join(process.cwd(), "src/lambdas/restore-auth-header/index.ts"),
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_22_X,
+      architecture: lambda.Architecture.X86_64,
+      memorySize: 128,
+      timeout: Duration.seconds(5),
+    });
+
     const gatewayOac = new cloudfront.CfnOriginAccessControl(this, "GatewayOac", {
       originAccessControlConfig: {
         name: names.global("gateway-oac"),
@@ -103,15 +129,15 @@ function handler(event) {
           },
         ],
       },
-      additionalBehaviors: {
-        "api/gateway/*": {
-          // Plain HttpOrigin to the gateway Function URL, with the lambda OAC
-          // attached so CloudFront SigV4-signs each request. We can't use
-          // `FunctionUrlOrigin.withOriginAccessControl` (which wants a live
-          // IFunctionUrl and adds the invoke permission here) because the
-          // gateway Lambda lives in another repo/region — we only have its
-          // domain string. The invoke permission is granted on the Lambda in
-          // the registry repo's gateway stack.
+      additionalBehaviors: (() => {
+        // Plain HttpOrigin to the gateway Function URL, with the lambda OAC
+        // attached so CloudFront SigV4-signs each request. We can't use
+        // `FunctionUrlOrigin.withOriginAccessControl` (which wants a live
+        // IFunctionUrl and adds the invoke permission here) because the
+        // gateway Lambda lives in another repo/region — we only have its
+        // domain string. The invoke permission is granted on the Lambda in
+        // the registry repo's gateway stack.
+        const gatewayBehavior: cloudfront.BehaviorOptions = {
           origin: new origins.HttpOrigin(gatewayFunctionUrlDomain, {
             protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
             readTimeout: Duration.seconds(60),
@@ -120,19 +146,36 @@ function handler(event) {
           }),
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          functionAssociations: [
+            {
+              function: forwardHost,
+              eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+            },
+          ],
           edgeLambdas: [
             {
               functionVersion: oacBodyHash.currentVersion,
               eventType: cloudfront.LambdaEdgeEventType.ORIGIN_REQUEST,
               includeBody: true,
             },
+            {
+              functionVersion: restoreAuthHeader.currentVersion,
+              eventType: cloudfront.LambdaEdgeEventType.ORIGIN_RESPONSE,
+            },
           ],
           originRequestPolicy:
             cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        },
-      },
+        };
+        return {
+          // Whole /api/* namespace: /api/gateway/* (REST) + /api/mcp (MCP).
+          "api/*": gatewayBehavior,
+          // RFC 9728 OAuth resource metadata for the MCP endpoint — resolved
+          // by MCP clients at the domain root.
+          ".well-known/*": gatewayBehavior,
+        };
+      })(),
     });
 
     new CfnOutput(this, "CertificateArn", {

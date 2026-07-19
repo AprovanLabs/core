@@ -173,6 +173,11 @@ export class MainStack extends Stack {
     this.client = this.userPool.addClient("PublicClient", {
       userPoolClientName: names.regional("public-client"),
       generateSecret: false,
+      // Sessions stay signed in for 30 days: web clients renew the ~1h access
+      // token silently with the refresh token (see @aprovan/ui/auth).
+      accessTokenValidity: Duration.hours(1),
+      idTokenValidity: Duration.hours(1),
+      refreshTokenValidity: Duration.days(30),
       oAuth: {
         flows: { authorizationCodeGrant: true },
         scopes: [
