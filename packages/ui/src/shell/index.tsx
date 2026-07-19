@@ -122,6 +122,8 @@ function MenuIcon({ className }: { className?: string }): React.ReactElement {
 }
 
 export interface AppHeaderProps {
+  /** Content before the brand (e.g. a sidebar toggle on small screens). */
+  leading?: React.ReactNode;
   /** Brand mark (logo image / svg). */
   logo?: React.ReactNode;
   /** Wordmark next to the logo. Default "aprovan". */
@@ -144,6 +146,7 @@ export interface AppHeaderProps {
  * right. Sticky by default; style overrides via `className`.
  */
 export function AppHeader({
+  leading,
   logo,
   name = "aprovan",
   homeHref = "/",
@@ -166,6 +169,7 @@ export function AppHeader({
       data-slot="app-header"
     >
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:px-4">
+        {leading}
         <a className="flex shrink-0 items-center gap-2" href={homeHref}>
           {logo}
           <span className="text-base font-semibold tracking-tight">{name}</span>
