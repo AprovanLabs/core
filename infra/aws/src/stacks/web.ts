@@ -174,6 +174,9 @@ function handler(event) {
           // RFC 9728 OAuth resource metadata for the MCP endpoint — resolved
           // by MCP clients at the domain root.
           ".well-known/*": gatewayBehavior,
+          // Live published apps (aprovan.com/apps/<workspace>/<name>) —
+          // served by the gateway from workspace FS, not from S3.
+          "apps/*": gatewayBehavior,
         };
       })(),
     });
