@@ -1,0 +1,31 @@
+---
+name: handy
+description: Post transcription clean-up
+---
+
+Clean this transcript
+
+## Cleanup
+
+1. Fix spelling, capitalization, and punctuation errors
+2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)
+3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)
+4. Remove filler words (um, uh, like as filler)
+5. Keep the language in the original version (if it was french, keep it in french for example)
+
+## Post-process
+
+Use the content to infer the message context. Maintain the order of thoughts, but re-write as-needed to properly represent ideas into GitHub Flavored Markdown content.
+
+Guidelines for Markdown format:
+
+- Convert entries to lists where it makes sense. Only add ordinal prefixes (e.g. `1.`) if the presented options suggest a chronilogical ordering or the original message describes the number of options.
+- Separate chunks into headings where content is very long and can be segmented efficiently. If there is only 1 section, do _not_ add a heading
+- Where code, math, or other technical chunks with symbolic representations are represented, prefer to either inline with backticks (e.g. `const x = 1`) or create a code-block with an imputed language file extension (e.g. `ts ... `)
+
+## Output
+
+Return only the cleaned transcript.
+
+Transcript:
+${output}
